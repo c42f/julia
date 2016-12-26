@@ -461,7 +461,7 @@
 
           ((identifier-start-char? c)     (accum-julia-symbol c port))
 
-          ((string.find "()[]{},;\"`@" c) (read-char port))
+          ((string.find "()[]{}⟨⟩,;\"`@" c) (read-char port))
 
           ((string.find "0123456789" c)   (read-number port #f #f))
 
@@ -581,7 +581,7 @@
 
 (define (invalid-initial-token? tok)
   (or (eof-object? tok)
-      (memv tok '(#\) #\] #\} else elseif catch finally =))))
+      (memv tok '(#\) #\] #\} #\⟩ else elseif catch finally =))))
 
 (define (line-number-node s)
   `(line ,(input-port-line (ts:port s)) ,current-filename))
@@ -818,7 +818,7 @@
             (else ex)))))
 
 (define closing-token?
-  (let ((closer? (Set '(else elseif catch finally #\, #\) #\] #\} #\;))))
+  (let ((closer? (Set '(else elseif catch finally #\, #\) #\] #\} #\⟩ #\;))))
     (lambda (tok)
       (or (and (eq? tok 'end) (not end-symbol))
           (closer? tok)
@@ -1066,6 +1066,11 @@
              (if (ts:space? s) (disallowed-space ex t))
              (take-token s)
              (loop (list* 'curly ex (parse-arglist s #\} ))))
+            ((#\⟨ )
+             (if (ts:space? s) (disallowed-space ex t))
+             (take-token s)
+             (loop (list* 'macrocall (macroify-name ex '_mathangle) (parse-arglist s #\⟩ )))
+             )
             ((#\" #\`)
              (if (and (or (symbol? ex) (valid-modref? ex))
                       (not (operator? ex))
@@ -1504,7 +1509,7 @@
                       ;; newline character isn't detectable here
                       #;((eqv? c #\newline)
                       (error "unexpected line break in argument list"))
-                      ((or (eqv? c #\]) (eqv? c #\}))
+                      ((or (eqv? c #\]) (eqv? c #\}) (eqv? c #\⟩))
                        (error (string "unexpected \"" c "\" in argument list")))
                       (else
                        (error (string "missing comma or " closer
@@ -1586,7 +1591,7 @@
              (loop '() (update-outer vec outer)))
             ((#\,)
              (error "unexpected comma in matrix expression"))
-            ((#\] #\})
+            ((#\] #\} #\⟩)
              (error (string "unexpected \"" t "\"")))
             ((for)
              (if (and (not semicolon)
