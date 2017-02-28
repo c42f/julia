@@ -228,7 +228,7 @@
            ((macrocall)
             (cond ((or (eq? (cadr e) '@label) (eq? (cadr e) '@goto))
                    e)
-                  ((eq? (cadr e) '@__LOCATION__)
+                  ((eq? (cadr e) '@__LINE__)
                    current-lineno)
                   (else
                    `(macrocall ,.(map (lambda (x)
@@ -416,7 +416,7 @@
         ((eq? (car e) 'inert) e)
         ((eq? (car e) 'macrocall)
          ;; expand macro
-         (let ((form (if (eq? (cadr e) '@__LOCATION__)
+         (let ((form (if (eq? (cadr e) '@__LINE__)
                          `(,lineno)
                          (apply invoke-julia-macro lineno (cadr e) (cddr e)))))
            (if (not form)
