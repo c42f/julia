@@ -3046,7 +3046,7 @@ f(x) = yt(x)
                             ,@top-stmts
                             ,@sp-inits
                             (method ,name ,(cl-convert sig fname lam namemap toplevel interp)
-                                    ,(julia-expand-macros `(quote ,newlam) 0) ;; FIXME
+                                    ,(julia-expand-macros `(quote ,newlam) 0) ;; FIXME?
                                     ,(last e))))))
                  ;; local case - lift to a new type at top level
                  (let* ((exists (get namemap name #f))
@@ -3729,4 +3729,4 @@ f(x) = yt(x)
 (define (julia-expand ex)
   (julia-expand1
    (julia-expand0
-    (julia-expand-macros ex 0)))) ;; FIXME?
+    (julia-expand-macros ex 0))))
