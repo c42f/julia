@@ -980,6 +980,24 @@ JL_DLLEXPORT jl_array_t *jl_array_cconvert_cstring(jl_array_t *a);
 JL_DLLEXPORT void jl_depwarn_partial_indexing(size_t n);
 void jl_depwarn(const char *msg, jl_value_t *sym);
 
+// Convenience macros for sending messages to the julia logging framework
+#define STR(x) #x
+#define XSTR(x) STR(x)
+#define JL_DEBUG(...) jl_logf(JL_LOGLEVEL_DEBUG, NULL, NULL, XSTR(__FILE__:__LINE__), __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+#define JL_INFO(...)  jl_logf(JL_LOGLEVEL_INFO,  NULL, NULL, XSTR(__FILE__:__LINE__), __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+#define JL_WARN(...)  jl_logf(JL_LOGLEVEL_WARN,  NULL, NULL, XSTR(__FILE__:__LINE__), __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+#define JL_ERROR(...) jl_logf(JL_LOGLEVEL_ERROR, NULL, NULL, XSTR(__FILE__:__LINE__), __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+
+// Log `msg` to the current logger by calling CoreLogging.logmsg_thunk() on the
+// julia side.
+void jl_log(int level, jl_module_t* module, const char* group, const char* id,
+            const char* file, int line, jl_value_t** kwargs, int kwargs_len,
+            const char *msg);
+// Log a message with printf style argument list
+void jl_logf(int level, jl_module_t* module, const char* group, const char* id,
+             const char* file, int line, jl_value_t** kwargs, int kwargs_len,
+             const char *fmt, ...);
+
 int isabspath(const char *in);
 
 extern jl_sym_t *call_sym;    extern jl_sym_t *invoke_sym;

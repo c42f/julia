@@ -101,7 +101,7 @@
                                                error incomplete))
                       (and (eq? (car e) 'global) (every symbol? (cdr e))))))
          (if (underscore-symbol? e)
-             (syntax-deprecation #f "underscores as an rvalue" ""))
+             (syntax-deprecation "underscores as an rvalue" ""))
          e)
         (else
          (let ((last *in-expand*))
@@ -202,18 +202,6 @@
    (jl-parse-all (open-input-file filename) filename)
    (lambda (e) #f)))
 
-(define *depwarn* #t)
-(define (jl-parser-depwarn w)
-  (let ((prev *depwarn*))
-    (set! *depwarn* (eq? w #t))
-    prev))
-
-(define *deperror* #f)
-(define (jl-parser-deperror e)
-  (let ((prev *deperror*))
-    (set! *deperror* (eq? e #t))
-    prev))
-
 ; expand a piece of raw surface syntax to an executable thunk
 (define (jl-expand-to-thunk expr)
   (parser-wrap (lambda ()
@@ -229,3 +217,31 @@
            (newline)
            (prn e))
    (lambda () (profile s))))
+
+
+; --- logging ---
+; Utilities for logging messages from the frontend, in a way which can be
+; controlled from julia code.
+
+; Log a syntax deprecation from an unknown location
+(define (syntax-deprecation what instead)
+  (syntax-deprecation- what instead 'none 0 #f))
+
+(define (syntax-deprecation- what instead file line exactloc)
+    (frontend-depwarn (format-syntax-deprecation what instead file line exactloc)
+                      file line))
+
+(define (format-syntax-deprecation what instead file line exactloc)
+  (string "Deprecated syntax `" what "`"
+          (if (or (= line 0) (eq? file 'none))
+            ""
+            (string (if exactloc " at " " around ") file ":" line))
+          "."
+          (if (equal? instead "") ""
+            (string #\newline "Use `" instead "` instead."))))
+
+(define *depwarn-level* 0)
+
+; Emit deprecation warning via julia logging layer.
+(define (frontend-depwarn msg file line)
+  (julia-logmsg *depwarn-level* 'depwarn (symbol (string file line)) file line msg))
