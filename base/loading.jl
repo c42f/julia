@@ -177,7 +177,7 @@ function _require_search_from_serialized(mod::Symbol, sourcepath::String)
             if isa(restored, ErrorException) && endswith(restored.msg, " uuid did not match cache file.")
                 # can't use this cache due to a module uuid mismatch,
                 # defer reporting error until after trying all of the possible matches
-                DEBUG_LOADING[] && info("JL_DEBUG_LOADING: Failed to load $path_to_try because $(restored.msg)")
+                @debug "Failed to load $path_to_try because $(restored.msg)" _group=:loading
                 continue
             end
             warn("Deserialization checks failed while attempting to load cache from $path_to_try.")
@@ -188,11 +188,6 @@ function _require_search_from_serialized(mod::Symbol, sourcepath::String)
     end
     return !isempty(paths)
 end
-
-# this value is set by `require` based on whether JULIA_DEBUG_LOADING
-# is presently defined as an environment variable
-# and makes the logic in this file noisier about what it is doing and why
-const DEBUG_LOADING = Ref(false)
 
 # to synchronize multiple tasks trying to import/using something
 const package_locks = Dict{Symbol,Condition}()
@@ -396,7 +391,6 @@ function _require(mod::Symbol)
     # and is not applied recursively to imported modules:
     old_track_dependencies = _track_dependencies[]
     _track_dependencies[] = false
-    DEBUG_LOADING[] = haskey(ENV, "JULIA_DEBUG_LOADING")
 
     # handle recursive calls to require
     loading = get(package_locks, mod, false)
@@ -638,12 +632,11 @@ function compilecache(name::String)
         end
     end
     # run the expression and cache the result
-    if isinteractive() || DEBUG_LOADING[]
-        if isfile(cachefile)
-            info("Recompiling stale cache file $cachefile for module $name.")
-        else
-            info("Precompiling module $name.")
-        end
+    level = isinteractive() ? Logging.Info : Logging.Debug
+    if isfile(cachefile)
+        @logmsg level "Recompiling stale cache file $cachefile for module $name." _group=:loading
+    else
+        @logmsg level "Precompiling module $name." _group=:loading
     end
     if success(create_expr_cache(path, cachefile, concrete_deps))
         # append checksum to the end of the .ji file:
@@ -721,7 +714,7 @@ function stale_cachefile(modpath::String, cachefile::String)
     io = open(cachefile, "r")
     try
         if !isvalid_cache_header(io)
-            DEBUG_LOADING[] && info("JL_DEBUG_LOADING: Rejecting cache file $cachefile due to it containing an invalid cache header.")
+            @debug "Rejecting cache file $cachefile due to it containing an invalid cache header." _group=:loading
             return true # invalid cache file
         end
         modules, files, required_modules = parse_cache_header(io)
@@ -750,14 +743,14 @@ function stale_cachefile(modpath::String, cachefile::String)
                 if uuid === uuid_req
                     return false # this is the file we want
                 end
-                DEBUG_LOADING[] && info("JL_DEBUG_LOADING: Rejecting cache file $cachefile because it provides the wrong uuid (got $uuid) for $mod (want $uuid_req).")
+                @debug "Rejecting cache file $cachefile because it provides the wrong uuid (got $uuid) for $mod (want $uuid_req)." _group=:loading
                 return true # cachefile doesn't provide the required version of the dependency
             end
         end
 
         # now check if this file is fresh relative to its source files
         if !samefile(files[1][1], modpath)
-            DEBUG_LOADING[] && info("JL_DEBUG_LOADING: Rejecting cache file $cachefile because it is for file $(files[1][1])) not file $modpath.")
+            @debug "Rejecting cache file $cachefile because it is for file $(files[1][1])) not file $modpath." _group=:loading
             return true # cache file was compiled from a different path
         end
         for (f, ftime_req) in files
@@ -765,7 +758,7 @@ function stale_cachefile(modpath::String, cachefile::String)
             # Issue #20837: compensate for GlusterFS truncating mtimes to microseconds
             ftime = mtime(f)
             if ftime != ftime_req && ftime != floor(ftime_req) && ftime != trunc(ftime_req, 6)
-                DEBUG_LOADING[] && info("JL_DEBUG_LOADING: Rejecting stale cache file $cachefile (mtime $ftime_req) because file $f (mtime $ftime) has changed.")
+                @debug "Rejecting stale cache file $cachefile (mtime $ftime_req) because file $f (mtime $ftime) has changed." _group=:loading
                 return true
             end
         end
@@ -773,7 +766,7 @@ function stale_cachefile(modpath::String, cachefile::String)
         # finally, verify that the cache file has a valid checksum
         crc = crc32c(seekstart(io), filesize(io)-4)
         if crc != ntoh(read(io, UInt32))
-            DEBUG_LOADING[] && info("JL_DEBUG_LOADING: Rejecting cache file $cachefile because it has an invalid checksum.")
+            @debug "Rejecting cache file $cachefile because it has an invalid checksum." _group=:loading
             return true
         end
 
