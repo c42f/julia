@@ -1966,8 +1966,8 @@ void jl_init_types(void)
                             jl_type_type, // TupleType
                             jl_any_type, // TupleType
                             jl_any_type, // SimpleVector{TupleType}
-                            jl_long_type, // Int
-                            jl_long_type, // Int
+                            jl_ulong_type,
+                            jl_ulong_type,
                             jl_any_type, // Any
                             jl_bool_type,
                             jl_bool_type,
@@ -2101,7 +2101,7 @@ void jl_init_types(void)
                             jl_sym_type,
                             jl_int32_type,
                             jl_type_type,
-                            jl_long_type,
+                            jl_ulong_type,
                             jl_any_type, // Union{Array, Nothing}
                             jl_any_type, // TypeMap
                             jl_simplevector_type,
@@ -2144,8 +2144,8 @@ void jl_init_types(void)
                             jl_any_type,
                             jl_any_type,
                             jl_any_type,
-                            jl_long_type,
-                            jl_long_type,
+                            jl_ulong_type,
+                            jl_ulong_type,
                             jl_bool_type,
                             jl_uint8_type,
                             jl_bool_type,
