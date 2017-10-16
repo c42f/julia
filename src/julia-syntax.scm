@@ -2194,6 +2194,12 @@
                   (expand-transposed-op
                    e
                    #(Ac_ldiv_Bc Ac_ldiv_B At_ldiv_Bt At_ldiv_B A_ldiv_Bc A_ldiv_Bt)))
+                 ((and (eq? f '|\|>|) (length= e 4))
+                  ; Treat _ as a function argument placeholder within pipe expressions
+                  (let* ((a (caddr e))
+                         (rhs (cadddr e))
+                         (b (if (pair? rhs) `(-> _ ,rhs) rhs)))
+                    `(call ,f ,(expand-forms a) ,(expand-forms b))))
                  (else
                   (map expand-forms e))))
          (map expand-forms e)))
