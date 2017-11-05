@@ -794,6 +794,21 @@ export
     uppercase,
     warn,
 
+# logging
+    AbstractLogger,
+    LogLevel,
+    NullLogger,
+    @debug,
+    @info,
+    @warn,
+    @error,
+    @logmsg,
+    with_logger,
+    current_logger,
+    global_logger,
+    disable_logging,
+    SimpleLogger,
+
 # random numbers
     AbstractRNG,
     MersenneTwister,

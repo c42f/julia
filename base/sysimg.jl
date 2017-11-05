@@ -357,6 +357,8 @@ include("combinatorics.jl")
 # more hashing definitions
 include("hashing2.jl")
 
+include("logging.jl")
+
 # irrational mathematical constants
 include("irrationals.jl")
 include("mathconstants.jl")
@@ -466,6 +468,7 @@ isdefined(Core, :Inference) && Docs.loaddocs(Core.Inference.CoreDocs.DOCS)
 function __init__()
     # Base library init
     reinit_stdio()
+    global_logger(SimpleLogger(STDERR))
     Multimedia.reinit_displays() # since Multimedia.displays uses STDOUT as fallback
     early_init()
     init_load_path()
