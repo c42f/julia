@@ -324,7 +324,7 @@ function register_root_module(key, m::Module)
         oldm = loaded_modules[key]
         if oldm !== m
             name = module_name(oldm)
-            warn("replacing module $name.")
+            @warn "Replacing module `$name`"
         end
     end
     loaded_modules[key] = m

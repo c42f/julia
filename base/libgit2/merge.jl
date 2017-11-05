@@ -259,7 +259,6 @@ function merge_base(repo::GitRepo, one::AbstractString, two::AbstractString)
                 moid_ptr, repo.ptr, oid1_ptr, oid2_ptr)
         moid_ptr[]
     catch e
-        #warn("Pkg:",path(repo),"=>",e.msg)
         GitHash()
     end
     return moid

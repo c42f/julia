@@ -533,8 +533,8 @@ temp_pkg_dir() do
     # Verify that the --startup-file flag is respected by Pkg.build / Pkg.test
     let package = "StartupFile"
         content = """
-            info("JULIA_RC_LOADED defined \$(isdefined(@__MODULE__, :JULIA_RC_LOADED))")
-            info("Main.JULIA_RC_LOADED defined \$(isdefined(Main, :JULIA_RC_LOADED))")
+            @info "JULIA_RC_LOADED defined \$(isdefined(@__MODULE__, :JULIA_RC_LOADED))"
+            @info "Main.JULIA_RC_LOADED defined \$(isdefined(Main, :JULIA_RC_LOADED))"
             """
 
         write_build(package, content)

@@ -2060,8 +2060,7 @@ function prompt!(term, prompt, s = init_state(term, prompt))
             try
                 action = fcn(s, kdata)
             catch e
-                bt = catch_backtrace()
-                warn(e, bt = bt, prefix = "ERROR (in the keymap): ")
+                @error "Error in the keymap" exception=e
                 # try to cleanup and get `s` back to its original state before returning
                 transition(s, :reset)
                 transition(s, old_state)

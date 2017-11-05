@@ -89,14 +89,14 @@ num_bit_chunks(n::Int) = _div64(n+63)
 function _check_bitarray_consistency(B::BitArray{N}) where N
     n = length(B)
     if N ≠ 1
-        all(d ≥ 0 for d in B.dims) || (warn("negative d in dims: $(B.dims)"); return false)
-        prod(B.dims) ≠ n && (warn("inconsistent dims/len: prod(dims)=$(prod(B.dims)) len=$n"); return false)
+        all(d ≥ 0 for d in B.dims) || (@warn("Negative d in dims: $(B.dims)"); return false)
+        prod(B.dims) ≠ n && (@warn("Inconsistent dims/len: prod(dims)=$(prod(B.dims)) len=$n"); return false)
     end
     Bc = B.chunks
     nc = length(Bc)
-    nc == num_bit_chunks(n) || (warn("incorrect chunks length for length $n: expected=$(num_bit_chunks(n)) actual=$nc"); return false)
+    nc == num_bit_chunks(n) || (@warn("Incorrect chunks length for length $n: expected=$(num_bit_chunks(n)) actual=$nc"); return false)
     n == 0 && return true
-    Bc[end] & _msk_end(n) == Bc[end] || (warn("nonzero bits in chunk after BitArray end"); return false)
+    Bc[end] & _msk_end(n) == Bc[end] || (@warn("Nonzero bits in chunk after `BitArray` end"); return false)
     return true
 end
 

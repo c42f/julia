@@ -2514,8 +2514,8 @@ mktempdir() do dir
             try
                 # OpenSSL needs to be on the path
                 openssl_installed = !isempty(read(`openssl version`, String))
-            catch
-                warn("Skipping hostname verification tests. Is `openssl` on the path?")
+            catch ex
+                @warn "Skipping hostname verification tests. Is `openssl` on the path?" exception=ex
             end
 
             # Find a hostname that maps to the loopback address
@@ -2544,7 +2544,7 @@ mktempdir() do dir
             end
 
             if isempty(common_name)
-                warn("Skipping hostname verification tests. Unable to determine a hostname which maps to the loopback address")
+                @warn "Skipping hostname verification tests. Unable to determine a hostname which maps to the loopback address"
             end
         end
         if openssl_installed && !isempty(common_name)

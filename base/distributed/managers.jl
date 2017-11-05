@@ -232,11 +232,11 @@ function manage(manager::SSHManager, id::Integer, config::WorkerConfig, op::Symb
             host = get(config.host)
             sshflags = get(config.sshflags)
             if !success(`ssh -T -a -x -o ClearAllForwardings=yes -n $sshflags $host "kill -2 $ospid"`)
-                warn(STDERR,"error sending a Ctrl-C to julia worker $id on $host")
+                @warn "Error sending a Ctrl-C to julia worker $id on $host"
             end
         else
             # This state can happen immediately after an addprocs
-            warn(STDERR,"worker $id cannot be presently interrupted.")
+            @warn "Worker $id cannot be presently interrupted."
         end
     end
 end

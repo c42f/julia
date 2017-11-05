@@ -868,7 +868,7 @@ function _rmprocs(pids, waitfor)
         rmprocset = []
         for p in vcat(pids...)
             if p == 1
-                warn("rmprocs: process 1 not removed")
+                @warn "rmprocs: process 1 not removed"
             else
                 if haskey(map_pid_wrkr, p)
                     w = map_pid_wrkr[p]
@@ -1075,13 +1075,13 @@ function terminate_all_workers()
         try
             rmprocs(workers(); waitfor=5.0)
         catch _ex
-            warn("Forcibly interrupting busy workers")
+            @warn "Forcibly interrupting busy workers" exception=_ex
             # Might be computation bound, interrupt them and try again
             interrupt(workers())
             try
                 rmprocs(workers(); waitfor=5.0)
             catch _ex2
-                warn("Unable to terminate all workers")
+                @error "Unable to terminate all workers" exception=_ex2
             end
         end
     end

@@ -280,7 +280,7 @@ function process_options(opts::JLOptions)
         elseif cmd == 'L'
             # nothing
         else
-            warn("unexpected command -$cmd'$arg'")
+            @warn "Unexpected command -$cmd'$arg'"
         end
     end
 
@@ -417,7 +417,7 @@ function _start()
                 banner && REPL.banner(term,term)
                 if term.term_type == "dumb"
                     active_repl = REPL.BasicREPL(term)
-                    quiet || warn("Terminal not fully functional")
+                    quiet || @warn "Terminal not fully functional"
                 else
                     active_repl = REPL.LineEditREPL(term, true)
                     active_repl.history_file = history_file
