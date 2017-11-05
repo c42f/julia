@@ -1,7 +1,3 @@
-using Compat
-using FastClosures
-import Base: isless, +, -, convert, show
-
 #-------------------------------------------------------------------------------
 # The AbstractLogger interface
 """
@@ -186,23 +182,11 @@ end
 # Get (module,filepath,line) for the location of the caller of a macro.
 # Designed to be used from within the body of a macro.
 macro sourceinfo()
-    @static if Compat.macros_have_sourceloc
-        esc(quote
-            (__module__,
-             __source__.file == nothing ? "?" : String(__source__.file),
-             __source__.line)
-        end)
-    else
-        # For julia-0.6 and below, the above doesn't work, and the
-        # following dubious hack gives an approximate line number only
-        # - the line of the start of the current toplevel expression!
-        # See #1.
-        esc(quote
-            (current_module(),
-             (p = Base.source_path(); p == nothing ? "REPL" : p),
-             Int(unsafe_load(cglobal(:jl_lineno, Cint))))
-        end)
-    end
+    esc(quote
+        (__module__,
+         __source__.file == nothing ? "?" : String(__source__.file),
+         __source__.line)
+    end)
 end
 
 macro logmsg(level, message, exs...) logmsg_code((@sourceinfo)..., esc(level), message, exs...) end
@@ -227,9 +211,6 @@ _log_record_ids = Set{Symbol}()
 # itself doesn't change.
 function log_record_id(_module, level, message_ex)
     modname = join(fullname(_module), "_")
-    if VERSION < v"0.7.0-DEV.1877" && isempty(modname)
-        modname = "Main"
-    end
     # Use (1<<31) to fit well within an (arbitriraly chosen) eight hex digits,
     # as we increment h to resolve any collisions.
     h = hash(string(modname, level, message_ex)) % (1<<31)
@@ -306,9 +287,7 @@ function logmsg_code(_module, file, line, level, message, exs...)
                 if shouldlog(logger, level, _module, group, id)
                     # Bind log record generation into a closure, allowing us to
                     # defer creation of the records until after filtering.
-                    #
-                    # Use FastClosures.@closure to work around https://github.com/JuliaLang/julia/issues/15276
-                    create_msg = @closure function cm(logger, level, _module, group, id, file, line)
+                    create_msg = function cm(logger, level, _module, group, id, file, line)
                         msg = $(esc(message))
                         handle_message(logger, level, msg, _module, group, id, file, line; $(kwargs...))
                     end
