@@ -570,16 +570,6 @@ function resolve(
     build(map(x->x[1], filter(x -> x[2][2] !== nothing, changes)))
 end
 
-function warnbanner(msg...; label="[ WARNING ]", prefix="")
-    cols = Base.displaysize(STDERR)[2]
-    str = rpad(lpad(label, div(cols+textwidth(label), 2), "="), cols, "=")
-    warn(prefix="", str)
-    println(STDERR)
-    warn(prefix=prefix, msg...)
-    println(STDERR)
-    warn(prefix="", "="^cols)
-end
-
 function build(pkg::AbstractString, build_file::AbstractString, errfile::AbstractString)
     # To isolate the build from the running Julia process, we execute each build.jl file in
     # a separate process. Errors are serialized to errfile for later reporting.
@@ -600,7 +590,10 @@ function build(pkg::AbstractString, build_file::AbstractString, errfile::Abstrac
                     evalfile(build_file)
                 end
             catch err
-                Base.Pkg.Entry.warnbanner(err, label="[ ERROR: \$pkg ]")
+                @error \"""
+                    ------------------------------------------------------------
+                    # Build failed for \$pkg
+                    \""" exception=err
                 serialize(f, pkg)
                 serialize(f, err)
             end
@@ -651,14 +644,16 @@ function build(pkgs::Vector)
     errs = Dict()
     build!(pkgs,errs)
     isempty(errs) && return
-    println(STDERR)
-    warnbanner(label="[ BUILD ERRORS ]", """
-    WARNING: $(join(keys(errs),", "," and ")) had build errors.
+    @warn """
+        ------------------------------------------------------------
+        # Build error summary
 
-     - packages with build errors remain installed in $(pwd())
-     - build the package(s) and all dependencies with `Pkg.build("$(join(keys(errs),"\", \""))")`
-     - build a single package by running its `deps/build.jl` script
-    """)
+        $(join(keys(errs),", "," and ")) had build errors.
+
+         - packages with build errors remain installed in $(pwd())
+         - build the package(s) and all dependencies with `Pkg.build("$(join(keys(errs),"\", \""))")`
+         - build a single package by running its `deps/build.jl` script
+        """
 end
 build() = build(sort!(collect(keys(installed()))))
 
@@ -672,7 +667,10 @@ function updatehook!(pkgs::Vector, errs::Dict, seen::Set=Set())
         cd(dirname(path)) do
             try evalfile(path)
             catch err
-                warnbanner(err, label="[ ERROR: $pkg ]")
+                @error """
+                    ------------------------------------------------------------
+                    # Update hook failed for $pkg
+                    """ exception=err
                 errs[pkg] = err
             end
         end
@@ -684,12 +682,15 @@ function updatehook(pkgs::Vector)
     updatehook!(pkgs,errs)
     isempty(errs) && return
     println(STDERR)
-    warnbanner(label="[ UPDATE ERRORS ]", """
-    WARNING: $(join(keys(errs),", "," and ")) had update errors.
+    @warn """
+        ------------------------------------------------------------
+        # Update hook summary
 
-     - Unrelated packages are unaffected
-     - To retry, run Pkg.update() again
-    """)
+        $(join(keys(errs),", "," and ")) had update errors.
+
+        - Unrelated packages are unaffected
+        - To retry, run Pkg.update() again
+        """
 end
 
 function test!(pkg::AbstractString,
@@ -726,7 +727,10 @@ function test!(pkg::AbstractString,
                 run(cmd)
                 @info "$pkg tests passed"
             catch err
-                warnbanner(err, label="[ ERROR: $pkg ]")
+                @error """
+                    ------------------------------------------------------------
+                    # Testing failed for $pkg
+                    """ exception=err
                 push!(errs,pkg)
             end
         end
