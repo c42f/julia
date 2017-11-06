@@ -243,6 +243,9 @@ include("shell.jl")
 include("regex.jl")
 include("show.jl")
 
+# Logging
+include("logging.jl")
+
 # multidimensional arrays
 include("cartesian.jl")
 using .Cartesian
@@ -356,8 +359,6 @@ include("combinatorics.jl")
 
 # more hashing definitions
 include("hashing2.jl")
-
-include("logging.jl")
 
 # irrational mathematical constants
 include("irrationals.jl")
