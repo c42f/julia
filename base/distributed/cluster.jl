@@ -1047,7 +1047,7 @@ function disable_nagle(sock)
     @static if Sys.islinux()
         # tcp_quickack is a linux only option
         if ccall(:jl_tcp_quickack, Cint, (Ptr{Void}, Cint), sock.handle, 1) < 0
-            @warn "Networking unoptimized ( Error enabling TCP_QUICKACK : $(Libc.strerror(Libc.errno())) )"
+            @warn "Networking unoptimized ( Error enabling TCP_QUICKACK : $(Libc.strerror(Libc.errno())) )" max_log=1
         end
     end
 end
