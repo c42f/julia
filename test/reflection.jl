@@ -602,7 +602,7 @@ has_backslashes(x) = Nullable{Method}()
 h16850 = has_backslashes(Base)
 if Sys.iswindows()
     if isnull(h16850)
-        @warn """No methods found in Base with backslashes in file name, 
+        @warn """No methods found in Base with backslashes in file name,
                  skipping test for `Base.url`"""
     else
         @test !('\\' in Base.url(get(h16850)))
