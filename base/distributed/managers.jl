@@ -472,7 +472,7 @@ function socket_reuse_port()
         rc = ccall(:jl_tcp_reuseport, Int32, (Ptr{Void},), s.handle)
         if rc < 0
             # This is an issue only on systems with lots of client connections, hence delay the warning
-            nworkers() > 128 && warn_once("Error trying to reuse client port number, falling back to regular socket.")
+            nworkers() > 128 && @warn "Error trying to reuse client port number, falling back to regular socket" max_log=1
 
             # provide a clean new socket
             return TCPSocket()
