@@ -441,7 +441,7 @@ function _require(mod::Symbol)
             cachefile = compilecache(mod)
             m = _require_from_serialized(mod, cachefile)
             if isa(m, Exception)
-                @warn """Module $mod declares __precompile__(true) but require failed
+                @warn """Module `$mod` declares `__precompile__(true)` but `require` failed
                          to create a usable precompiled cache file""" exception=m
                 # TODO: disable __precompile__(true) error and do normal include instead of error
                 error("Module $mod declares __precompile__(true) but require failed to create a usable precompiled cache file.")
