@@ -419,6 +419,8 @@ the `kind`) to reset everything.
 """
 function logging(io::IO, m::Union{Module,Void}=nothing, f::Union{Symbol,Void}=nothing;
                  kind::Symbol=:all)
+    depwarn("""`logging()` is deprecated, use `with_logger` instead to capture
+               messages from `Base`""", :logging)
     (kind==:all || kind==:info)  && (log_info_to[(m,f)] = io)
     (kind==:all || kind==:warn)  && (log_warn_to[(m,f)] = io)
     (kind==:all || kind==:error) && (log_error_to[(m,f)] = io)
@@ -426,6 +428,8 @@ function logging(io::IO, m::Union{Module,Void}=nothing, f::Union{Symbol,Void}=no
 end
 
 function logging(;  kind::Symbol=:all)
+    depwarn("""`logging()` is deprecated, use `with_logger` instead to capture
+               messages from `Base`""", :logging)
     (kind==:all || kind==:info)  && empty!(log_info_to)
     (kind==:all || kind==:warn)  && empty!(log_warn_to)
     (kind==:all || kind==:error) && empty!(log_error_to)
@@ -452,6 +456,7 @@ MY INFO: hello world
 See also [`logging`](@ref).
 """
 function info(io::IO, msg...; prefix="INFO: ")
+    depwarn("`info()` is deprecated, use `@info` instead.", :info)
     buf = IOBuffer()
     iob = redirect(IOContext(buf, io), log_info_to, :info)
     print_with_color(info_color(), iob, prefix; bold = true)
@@ -481,6 +486,7 @@ See also [`logging`](@ref).
 function warn(io::IO, msg...;
               prefix="WARNING: ", once=false, key=nothing, bt=nothing,
               filename=nothing, lineno::Int=0)
+    depwarn("`warn()` is deprecated, use `@warn` instead.", :warn)
     str = chomp(string(msg...))
     if once
         if key === nothing
