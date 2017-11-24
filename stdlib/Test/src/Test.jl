@@ -15,7 +15,7 @@ and summarize them at the end of the test set with `@testset`.
 """
 module Test
 
-export @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn
+export @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn, @test_logs
 export @testset
 # Legacy approximate testing functions, yet to be included
 export @inferred
@@ -489,7 +489,11 @@ function do_test_throws(result::ExecutionResult, @nospecialize(orig_expr), @nosp
 end
 
 #-----------------------------------------------------------------------
-# Test for warning messages
+# Test for log messages
+
+include("logging.jl")
+
+# Test for warning messages (deprecated)
 
 ismatch_warn(s::AbstractString, output) = contains(output, s)
 ismatch_warn(s::Regex, output) = ismatch(s, output)

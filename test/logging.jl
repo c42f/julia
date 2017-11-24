@@ -1,103 +1,13 @@
-import Base: LogLevel, BelowMinLevel, Debug, Info, Warn, Error, AboveMaxLevel,
-    shouldlog, handle_message, min_enabled_level, catch_exceptions
+import Base: BelowMinLevel, Debug, Info, Warn, Error,
+    handle_message, shouldlog
 
-import Base: ismatch
+import Test: collect_test_logs, TestLogger
 
-# Test helpers
-
-#--------------------------------------------------
-# A logger which does nothing, except enable exceptions to propagate
-struct AllowExceptionsLogger <: AbstractLogger ; end
-handle_message(logger::AllowExceptionsLogger) = nothing
-catch_exceptions(logger::AllowExceptionsLogger) = false
-
-#-------------------------------------------------------------------------------
-# Log records
-struct LogRecord
-    level
-    message
-    _module
-    group
-    id
-    file
-    line
-    kwargs
-end
-LogRecord(args...; kwargs...) = LogRecord(args..., kwargs)
-
-#-------------------------------------------------------------------------------
-# Logger with extra test-related state
-mutable struct TestLogger <: AbstractLogger
-    logs::Vector{LogRecord}
-    min_level::LogLevel
-    shouldlog_args
-end
-
-TestLogger(min_level=BelowMinLevel) = TestLogger(LogRecord[], min_level, nothing)
-min_enabled_level(logger::TestLogger) = logger.min_level
-
-function shouldlog(logger::TestLogger, level, _module, group, id)
-    logger.shouldlog_args = (level, _module, group, id)
-    true
-end
-
-function handle_message(logger::TestLogger, level, msg, _module,
-                        group, id, file, line; kwargs...)
-    push!(logger.logs, LogRecord(level, msg, _module, group, id, file, line, kwargs))
-end
-
-function collect_test_logs(f; min_level=Debug)
-    logger = TestLogger(min_level)
-    with_logger(f, logger)
-    logger.logs
-end
-
-
-#--------------------------------------------------
-# Log testing tools
-macro test_logs(exs...)
-    length(exs) >= 1 || throw(ArgumentError("""`@test_logs` needs at least one arguments.
-                               Usage: `@test_logs [msgs...] expr_to_run`"""))
-    args = Any[]
-    kwargs = Any[]
-    for e in exs[1:end-1]
-        if e isa Expr && e.head == :(=)
-            push!(kwargs, Expr(:kw, e.args...))
-        else
-            push!(args, esc(e))
-        end
-    end
-    # TODO: Better error reporting in @test
-    ex = quote
-        @test ismatch_logs($(args...); $(kwargs...)) do
-            $(esc(exs[end]))
-        end
-    end
-    # Propagate source code location of @test_logs to @test macro
-    ex.args[2].args[2] = __source__
-    ex
-end
-
-function ismatch_logs(f, patterns...; min_level=BelowMinLevel, kwargs...)
-    logs = collect_test_logs(f; min_level=min_level, kwargs...)
-    length(logs) == length(patterns) || return false
-    for (pattern,log) in zip(patterns, logs)
-        ismatch(pattern, log) || return false
-    end
-    return true
-end
-
-function ismatch(ref::Tuple, r::LogRecord)
-    stdfields = (r.level, r.message, r._module, r.group, r.id, r.file, r.line)
-    ref == stdfields[1:length(ref)]
-end
-
-#-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 @testset "Logging" begin
 
 @testset "Basic logging" begin
-    @test_logs (Debug, "a") @debug "a"
+    @test_logs (Debug, "a") min_level=Debug @debug "a"
     @test_logs (Info,  "a") @info  "a"
     @test_logs (Warn,  "a") @warn  "a"
     @test_logs (Error, "a") @error "a"
@@ -171,10 +81,11 @@ end
 
 @testset "Log message exception handling" begin
     # Exceptions in message creation are caught by default
-    @test_logs (Error,) @info "foo $(1÷0)"
-    # Exceptions propagate if explicitly disabled for the logger type
-    @test_throws DivideError with_logger(AllowExceptionsLogger()) do
-        @info "foo $(1÷0)"
+    @test_logs (Error,) catch_exceptions=true  @info "foo $(1÷0)"
+    # Exceptions propagate if explicitly disabled for the logger (by default
+    # for the test logger)
+    @test_throws DivideError collect_test_logs() do
+        @info  "foo $(1÷0)"
     end
 end
 
@@ -212,7 +123,7 @@ end
     @testset "Log filtering, global logger" begin
         old_logger = global_logger()
         logs = let
-            logger = TestLogger(Warn)
+            logger = TestLogger(min_level=Warn)
             global_logger(logger)
             @info "b"
             @warn "c"
@@ -234,16 +145,16 @@ end
         end
 
         disable_logging(BelowMinLevel)
-        @test_logs (Debug, "a") (Info, "b") (Warn, "c") (Error, "d")  log_each_level()
+        @test_logs (Debug, "a") (Info, "b") (Warn, "c") (Error, "d") min_level=Debug  log_each_level()
 
         disable_logging(Debug)
-        @test_logs (Info, "b") (Warn, "c") (Error, "d")  log_each_level()
+        @test_logs (Info, "b") (Warn, "c") (Error, "d") min_level=Debug  log_each_level()
 
         disable_logging(Info)
-        @test_logs (Warn, "c") (Error, "d")  log_each_level()
+        @test_logs (Warn, "c") (Error, "d") min_level=Debug  log_each_level()
 
         disable_logging(Warn)
-        @test_logs (Error, "d")  log_each_level()
+        @test_logs (Error, "d") min_level=Debug  log_each_level()
 
         disable_logging(Error)
         @test_logs log_each_level()
