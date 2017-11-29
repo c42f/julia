@@ -15,7 +15,9 @@ and summarize them at the end of the test set with `@testset`.
 """
 module Test
 
-export @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn, @test_logs
+export @test, @test_throws, @test_broken, @test_skip,
+    @test_warn, @test_nowarn,
+    @test_logs, @test_deprecated
 export @testset
 # Legacy approximate testing functions, yet to be included
 export @inferred
@@ -490,8 +492,6 @@ end
 
 #-----------------------------------------------------------------------
 # Test for log messages
-
-include("logging.jl")
 
 # Test for warning messages (deprecated)
 
@@ -1530,5 +1530,7 @@ begin
     end
     export @test_approx_eq
 end
+
+include("logging.jl")
 
 end # module
