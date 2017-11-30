@@ -438,8 +438,8 @@ function update(branch::AbstractString, upkgs::Set{String})
                         if success
                             post_sha = string(LibGit2.head_oid(repo))
                             branch = LibGit2.branch(repo)
-                            @info "Updating $pkg $branch..." * (prev_sha != post_sha) ?
-                                  " $(prev_sha[1:8]) → $(post_sha[1:8])" : ""
+                            @info "Updating $pkg $branch..." * (prev_sha != post_sha ?
+                                  " $(prev_sha[1:8]) → $(post_sha[1:8])" : "")
                         end
                     end
                 end
