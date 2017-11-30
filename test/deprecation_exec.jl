@@ -70,8 +70,7 @@ end
     @noinline function f21972()
         T21972()
     end
-    @test_warn "deprecated" f21972()
-    @test_nowarn f21972()
+    @test_deprecated f21972()
 end
 
 f24658() = depwarn24658()

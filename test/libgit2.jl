@@ -1111,9 +1111,9 @@ mktempdir() do dir
             head_ann = LibGit2.GitAnnotated(repo, "master")
 
             # (fail to) merge them because we can't fastforward
-            @test_warn "WARNING: Cannot perform fast-forward merge." !LibGit2.merge!(repo, [upst_ann], true)
+            @test_logs (:warn,"Cannot perform fast-forward merge") !LibGit2.merge!(repo, [upst_ann], true)
             # merge them now that we allow non-ff
-            @test_warn "INFO: Review and commit merged changes." LibGit2.merge!(repo, [upst_ann], false)
+            @test_logs (:info,"Review and commit merged changes") LibGit2.merge!(repo, [upst_ann], false)
             @test LibGit2.is_ancestor_of(string(oldhead), string(LibGit2.head_oid(repo)), repo)
 
             # go back to merge_a and rename a file
@@ -1126,7 +1126,7 @@ mktempdir() do dir
             rename_flag = 0
             rename_flag = LibGit2.toggle(rename_flag, 0) # turns on the find renames opt
             mos = LibGit2.MergeOptions(flags=rename_flag)
-            @test_warn "INFO: Review and commit merged changes." LibGit2.merge!(repo, [upst_ann], merge_opts=mos)
+            @test_logs (:info,"Review and commit merged changes") LibGit2.merge!(repo, [upst_ann], merge_opts=mos)
         end
     end
 
@@ -1457,7 +1457,7 @@ mktempdir() do dir
             LibGit2.branch!(repo, "master")
             a_head_ann = LibGit2.GitAnnotated(repo, "branch/merge_a")
             # merge returns true if successful
-            @test_warn "INFO: Review and commit merged changes." LibGit2.merge!(repo, [a_head_ann])
+            @test_logs (:info,"Review and commit merged changes") LibGit2.merge!(repo, [a_head_ann])
         end
     end
 

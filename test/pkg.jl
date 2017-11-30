@@ -660,18 +660,19 @@ temp_pkg_dir(initialize=false) do
     cd(Pkg.dir()) do
         errors = Dict()
 
+        # Log forwarding TODO - port these to @test_logs
         empty!(errors)
-        @test_warn ("INFO: Building Error",
-                    "INFO: Building Normal") Pkg.Entry.build!(["Error", "Normal"], errors)
+        @test_warn ("Building Error",
+                    "Building Normal") Pkg.Entry.build!(["Error", "Normal"], errors)
 
         empty!(errors)
-        @test_warn ("INFO: Building Exit",
-                    "INFO: Building Normal") Pkg.Entry.build!(["Exit", "Normal"], errors)
+        @test_warn ("Building Exit",
+                    "Building Normal") Pkg.Entry.build!(["Exit", "Normal"], errors)
 
         empty!(errors)
-        @test_warn ("INFO: Building Exit",
-                    "INFO: Building Normal",
-                    "INFO: Building Exit",
-                    "INFO: Building Normal") Pkg.Entry.build!(["Exit", "Normal", "Exit", "Normal"], errors)
+        @test_warn ("Building Exit",
+                    "Building Normal",
+                    "Building Exit",
+                    "Building Normal") Pkg.Entry.build!(["Exit", "Normal", "Exit", "Normal"], errors)
     end
 end
