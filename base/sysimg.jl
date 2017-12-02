@@ -232,6 +232,7 @@ include("show.jl")
 
 # Logging
 include("logging.jl")
+using .CoreLogging
 
 # multidimensional arrays
 include("cartesian.jl")
@@ -480,6 +481,7 @@ Base.require(:Dates)
 Base.require(:DelimitedFiles)
 Base.require(:FileWatching)
 Base.require(:IterativeEigenSolvers)
+Base.require(:Logging)
 Base.require(:Mmap)
 Base.require(:Profile)
 Base.require(:SharedArrays)

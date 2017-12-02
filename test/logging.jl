@@ -1,4 +1,5 @@
-import Base: BelowMinLevel, Debug, Info, Warn, Error,
+using Base.CoreLogging
+import Base.CoreLogging: BelowMinLevel, Debug, Info, Warn, Error,
     handle_message, shouldlog
 
 import Test: collect_test_logs, TestLogger
@@ -36,7 +37,7 @@ end
 @testset "Structured logging with key value pairs" begin
     foo_val = 10
     bar_val = 100
-    logs = collect_test_logs() do
+    logs,_ = collect_test_logs() do
         @info "test"  bar_val  progress=0.1  foo=foo_val  2*3  real_line=(@__LINE__)
         @info begin
             value_in_msg_block = 1000.0
@@ -195,6 +196,8 @@ end
 # Custom log levels
 
 @eval module LogLevelTest
+    using Base.CoreLogging
+
     struct MyLevel
         level::Int
     end
@@ -207,7 +210,7 @@ end
 
 @testset "Custom log levels" begin
     @test_logs (LogLevelTest.critical, "blah") @logmsg LogLevelTest.critical "blah"
-    logs = collect_test_logs(min_level=Debug) do
+    logs,_ = collect_test_logs(min_level=Debug) do
         @logmsg LogLevelTest.debug_verbose "blah"
     end
     @test length(logs) == 0

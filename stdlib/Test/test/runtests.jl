@@ -2,7 +2,7 @@
 
 using Test
 
-import Base: Debug, Info, Warn
+import Logging: Debug, Info, Warn
 
 @testset "@test" begin
     @test true

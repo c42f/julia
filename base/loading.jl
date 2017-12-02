@@ -615,7 +615,7 @@ function compilecache(name::String)
         end
     end
     # run the expression and cache the result
-    verbosity = isinteractive() ? Info : Debug
+    verbosity = isinteractive() ? CoreLogging.Info : CoreLogging.Debug
     if isfile(cachefile)
         @logmsg verbosity "Recompiling stale cache file $cachefile for module $name"
     else

@@ -1,4 +1,5 @@
-import Base: Info,
+using Logging
+import Logging: Info,
     shouldlog, handle_message, min_enabled_level, catch_exceptions
 import Base: ismatch
 
@@ -187,12 +188,12 @@ end
 
 # TODO: Use a version of parse_level from stdlib/Logging, when it exists.
 function parse_level(level::Symbol)
-    if      level == :belowminlevel  return  Base.BelowMinLevel
-    elseif  level == :debug          return  Base.Debug
-    elseif  level == :info           return  Base.Info
-    elseif  level == :warn           return  Base.Warn
-    elseif  level == :error          return  Base.Error
-    elseif  level == :abovemaxlevel  return  Base.AboveMaxLevel
+    if      level == :belowminlevel  return  Logging.BelowMinLevel
+    elseif  level == :debug          return  Logging.Debug
+    elseif  level == :info           return  Logging.Info
+    elseif  level == :warn           return  Logging.Warn
+    elseif  level == :error          return  Logging.Error
+    elseif  level == :abovemaxlevel  return  Logging.AboveMaxLevel
     else
         throw(ArgumentError("Unknown log level $level"))
     end

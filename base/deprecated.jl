@@ -67,7 +67,7 @@ function depwarn(msg, funcsym)
     if opts.depwarn == 2
         throw(ErrorException(msg))
     end
-    deplevel = opts.depwarn == 1 ? Warn : BelowMinLevel
+    deplevel = opts.depwarn == 1 ? CoreLogging.Warn : CoreLogging.BelowMinLevel
     @logmsg(
         deplevel,
         msg,
