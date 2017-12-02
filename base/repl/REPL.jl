@@ -14,7 +14,7 @@ export
     StreamREPL
 
 import Base:
-    Display,
+    AbstractDisplay,
     display,
     show,
     AnyDict,
@@ -113,7 +113,7 @@ function ip_matches_func(ip, func::Symbol)
     return false
 end
 
-struct REPLDisplay{R<:AbstractREPL} <: Display
+struct REPLDisplay{R<:AbstractREPL} <: AbstractDisplay
     repl::R
 end
 
@@ -248,13 +248,15 @@ mutable struct Options
     extra_keymap::Union{Dict,Vector{<:Dict}}
     backspace_align::Bool
     backspace_adjust::Bool
+    confirm_exit::Bool # ^D must be repeated to confirm exit
 end
 
 Options(;
         hascolor = true,
         extra_keymap = AnyDict[],
-        backspace_align = true, backspace_adjust = backspace_align) =
-            Options(hascolor, extra_keymap, backspace_align, backspace_adjust)
+        backspace_align = true, backspace_adjust = backspace_align,
+        confirm_exit = true) =
+            Options(hascolor, extra_keymap, backspace_align, backspace_adjust, confirm_exit)
 
 ## LineEditREPL ##
 
@@ -271,7 +273,7 @@ mutable struct LineEditREPL <: AbstractREPL
     in_help::Bool
     envcolors::Bool
     waserror::Bool
-    specialdisplay::Union{Void,Display}
+    specialdisplay::Union{Void,AbstractDisplay}
     options::Options
     interface::ModalInterface
     backendref::REPLBackendRef
@@ -284,13 +286,13 @@ specialdisplay(r::LineEditREPL) = r.specialdisplay
 specialdisplay(r::AbstractREPL) = nothing
 terminal(r::LineEditREPL) = r.t
 
-LineEditREPL(t::TextTerminal, envcolors::Bool=false) =
-    LineEditREPL(t, true,
-        Base.text_colors[:green],
-        Base.input_color(),
-        Base.answer_color(),
-        Base.text_colors[:red],
-        Base.text_colors[:yellow],
+LineEditREPL(t::TextTerminal, hascolor::Bool, envcolors::Bool=false) =
+    LineEditREPL(t, hascolor,
+        hascolor ? Base.text_colors[:green] : "",
+        hascolor ? Base.input_color() : "",
+        hascolor ? Base.answer_color() : "",
+        hascolor ? Base.text_colors[:red] : "",
+        hascolor ? Base.text_colors[:yellow] : "",
         false, false, false, envcolors
     )
 

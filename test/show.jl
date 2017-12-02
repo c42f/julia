@@ -5,15 +5,15 @@ include("testenv.jl")
 
 replstr(x) = sprint((io,x) -> show(IOContext(io, :limit => true, :displaysize => (24, 80)), MIME("text/plain"), x), x)
 
-@test replstr(Array{Any}(2)) == "2-element Array{Any,1}:\n #undef\n #undef"
-@test replstr(Array{Any}(2,2)) == "2×2 Array{Any,2}:\n #undef  #undef\n #undef  #undef"
-@test replstr(Array{Any}(2,2,2)) == "2×2×2 Array{Any,3}:\n[:, :, 1] =\n #undef  #undef\n #undef  #undef\n\n[:, :, 2] =\n #undef  #undef\n #undef  #undef"
+@test replstr(Array{Any}(uninitialized, 2)) == "2-element Array{Any,1}:\n #undef\n #undef"
+@test replstr(Array{Any}(uninitialized, 2,2)) == "2×2 Array{Any,2}:\n #undef  #undef\n #undef  #undef"
+@test replstr(Array{Any}(uninitialized, 2,2,2)) == "2×2×2 Array{Any,3}:\n[:, :, 1] =\n #undef  #undef\n #undef  #undef\n\n[:, :, 2] =\n #undef  #undef\n #undef  #undef"
 @test replstr([1f10]) == "1-element Array{Float32,1}:\n 1.0f10"
 
 struct T5589
     names::Vector{String}
 end
-@test replstr(T5589(Array{String,1}(100))) == "$(curmod_prefix)T5589([#undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef  …  #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef])"
+@test replstr(T5589(Vector{String}(uninitialized, 100))) == "$(curmod_prefix)T5589([#undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef  …  #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef, #undef])"
 
 @test replstr(Meta.parse("mutable struct X end")) == ":(mutable struct X\n        #= none:1 =#\n    end)"
 @test replstr(Meta.parse("struct X end")) == ":(struct X\n        #= none:1 =#\n    end)"
@@ -118,7 +118,7 @@ end
     # line meta
     dims::NTuple{N,Int}
     # line meta
-    function BitArray(dims::Int...)
+    function BitArray(uninitialized, dims::Int...)
         # line meta
         if length(dims) != N
             # line meta
@@ -139,7 +139,7 @@ end
         # line meta
         nc = num_bit_chunks(n)
         # line meta
-        chunks = Array{UInt64,1}(nc)
+        chunks = Vector{UInt64}(uninitialized, nc)
         # line meta
         if nc > 0
             # line meta
@@ -326,11 +326,11 @@ export D, E, F
 end"
 
 # issue #19840
-@test_repr "Array{Int}(0)"
-@test_repr "Array{Int}(0,0)"
-@test_repr "Array{Int}(0,0,0)"
-@test_repr "Array{Int}(0,1)"
-@test_repr "Array{Int}(0,0,1)"
+@test_repr "Array{Int}(uninitialized, 0)"
+@test_repr "Array{Int}(uninitialized, 0,0)"
+@test_repr "Array{Int}(uninitialized, 0,0,0)"
+@test_repr "Array{Int}(uninitialized, 0,1)"
+@test_repr "Array{Int}(uninitialized, 0,0,1)"
 
 # issue #8994
 @test_repr "get! => 2"
@@ -535,9 +535,9 @@ let repr = sprint(show, "text/html", methods(f16580))
 end
 
 if isempty(Base.GIT_VERSION_INFO.commit)
-    @test contains(Base.url(first(methods(eigs))),"https://github.com/JuliaLang/julia/tree/v$VERSION/base/linalg/arnoldi.jl#L")
+    @test contains(Base.url(first(methods(sin))),"https://github.com/JuliaLang/julia/tree/v$VERSION/base/mpfr.jl#L")
 else
-    @test contains(Base.url(first(methods(eigs))),"https://github.com/JuliaLang/julia/tree/$(Base.GIT_VERSION_INFO.commit)/base/linalg/arnoldi.jl#L")
+    @test contains(Base.url(first(methods(sin))),"https://github.com/JuliaLang/julia/tree/$(Base.GIT_VERSION_INFO.commit)/base/mpfr.jl#L")
 end
 
 # print_matrix should be able to handle small and large objects easily, test by
@@ -693,7 +693,7 @@ end
 
 # PR 17117
 # test show array
-let s = IOBuffer(Array{UInt8}(0), true, true)
+let s = IOBuffer(Vector{UInt8}(), true, true)
     Base.showarray(s, [1, 2, 3], false, header = false)
     @test String(resize!(s.data, s.size)) == " 1\n 2\n 3"
 end
@@ -744,7 +744,7 @@ end
 let repr = sprint(dump, Test)
     @test repr == "Module Test\n"
 end
-let a = Array{Any}(10000)
+let a = Vector{Any}(uninitialized, 10000)
     a[2] = "elemA"
     a[4] = "elemB"
     a[11] = "elemC"
@@ -902,7 +902,7 @@ end
 @testset "display arrays non-compactly when size(⋅, 2) == 1" begin
     # 0-dim
     @test replstr(zeros(Complex{Int})) == "0-dimensional Array{Complex{$Int},0}:\n0 + 0im"
-    A = Array{Pair}(); A[] = 1=>2
+    A = Array{Pair,0}(uninitialized); A[] = 1=>2
     @test replstr(A) == "0-dimensional Array{Pair,0}:\n1 => 2"
     # 1-dim
     @test replstr(zeros(Complex{Int}, 2)) ==
@@ -999,4 +999,29 @@ end
     show(io, "text/html", m)
     s = String(take!(io))
     @test contains(s, " in Base.Math ")
+end
+
+module TestShowType
+    export TypeA
+    struct TypeA end
+end
+
+@testset "module prefix when printing type" begin
+    @test sprint(show, TestShowType.TypeA) == "$(@__MODULE__).TestShowType.TypeA"
+
+    b = IOBuffer()
+    show(IOContext(b, :module => @__MODULE__), TestShowType.TypeA)
+    @test String(take!(b)) == "$(@__MODULE__).TestShowType.TypeA"
+
+    b = IOBuffer()
+    show(IOContext(b, :module => TestShowType), TestShowType.TypeA)
+    @test String(take!(b)) == "TypeA"
+
+    using .TestShowType
+
+    @test sprint(show, TypeA) == "$(@__MODULE__).TestShowType.TypeA"
+
+    b = IOBuffer()
+    show(IOContext(b, :module => @__MODULE__), TypeA)
+    @test String(take!(b)) == "TypeA"
 end

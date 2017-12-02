@@ -802,7 +802,7 @@ function Math.frexp(A::Array{<:AbstractFloat})
                    "consider using dot-syntax to `broadcast` scalar `frexp` over `Array`s ",
                    "instead, for example `frexp.(rand(4))`."), :frexp)
     F = similar(A)
-    E = Array{Int}(size(A))
+    E = Array{Int}(uninitialized, size(A))
     for (iF, iE, iA) in zip(eachindex(F), eachindex(E), eachindex(A))
         F[iF], E[iE] = frexp(A[iA])
     end
@@ -941,15 +941,15 @@ iteratoreltype(::Type{Task}) = EltypeUnknown()
 isempty(::Task) = error("isempty not defined for Tasks")
 
 # Deprecate Array(T, dims...) in favor of proper type constructors
-@deprecate Array(::Type{T}, d::NTuple{N,Int}) where {T,N}               Array{T}(d)
-@deprecate Array(::Type{T}, d::Int...) where {T}                        Array{T}(d...)
-@deprecate Array(::Type{T}, m::Int) where {T}                           Array{T}(m)
-@deprecate Array(::Type{T}, m::Int,n::Int) where {T}                    Array{T}(m,n)
-@deprecate Array(::Type{T}, m::Int,n::Int,o::Int) where {T}             Array{T}(m,n,o)
-@deprecate Array(::Type{T}, d::Integer...) where {T}                    Array{T}(convert(Tuple{Vararg{Int}}, d))
-@deprecate Array(::Type{T}, m::Integer) where {T}                       Array{T}(Int(m))
-@deprecate Array(::Type{T}, m::Integer,n::Integer) where {T}            Array{T}(Int(m),Int(n))
-@deprecate Array(::Type{T}, m::Integer,n::Integer,o::Integer) where {T} Array{T}(Int(m),Int(n),Int(o))
+@deprecate Array(::Type{T}, d::NTuple{N,Int}) where {T,N}               Array{T}(uninitialized, d)
+@deprecate Array(::Type{T}, d::Int...) where {T}                        Array{T}(uninitialized, d...)
+@deprecate Array(::Type{T}, m::Int) where {T}                           Array{T}(uninitialized, m)
+@deprecate Array(::Type{T}, m::Int,n::Int) where {T}                    Array{T}(uninitialized, m,n)
+@deprecate Array(::Type{T}, m::Int,n::Int,o::Int) where {T}             Array{T}(uninitialized, m,n,o)
+@deprecate Array(::Type{T}, d::Integer...) where {T}                    Array{T}(uninitialized, convert(Tuple{Vararg{Int}}, d))
+@deprecate Array(::Type{T}, m::Integer) where {T}                       Array{T}(uninitialized, Int(m))
+@deprecate Array(::Type{T}, m::Integer,n::Integer) where {T}            Array{T}(uninitialized, Int(m),Int(n))
+@deprecate Array(::Type{T}, m::Integer,n::Integer,o::Integer) where {T} Array{T}(uninitialized, Int(m),Int(n),Int(o))
 
 @noinline function is_intrinsic_expr(@nospecialize(x))
     Base.depwarn("is_intrinsic_expr is deprecated. There are no intrinsic functions anymore.", :is_intrinsic_expr)
@@ -1072,14 +1072,14 @@ end
 ## end of FloatRange
 
 @noinline zero_arg_matrix_constructor(prefix::String) =
-    depwarn("$prefix() is deprecated, use $prefix(0, 0) instead.", :zero_arg_matrix_constructor)
+    depwarn("$prefix() is deprecated, use $prefix(uninitialized, 0, 0) instead.", :zero_arg_matrix_constructor)
 function Matrix{T}() where T
     zero_arg_matrix_constructor("Matrix{T}")
-    return Matrix{T}(0, 0)
+    return Matrix{T}(uninitialized, 0, 0)
 end
 function Matrix()
     zero_arg_matrix_constructor("Matrix")
-    return Matrix(0, 0)
+    return Matrix(uninitialized, 0, 0)
 end
 
 for name in ("alnum", "alpha", "cntrl", "digit", "number", "graph",
@@ -1139,9 +1139,9 @@ import .LinAlg: cond
 
 # PR #21359
 import .Random: srand
-@deprecate srand(r::MersenneTwister, filename::AbstractString, n::Integer=4) srand(r, read!(filename, Array{UInt32}(Int(n))))
-@deprecate srand(filename::AbstractString, n::Integer=4) srand(read!(filename, Array{UInt32}(Int(n))))
-@deprecate MersenneTwister(filename::AbstractString)  srand(MersenneTwister(0), read!(filename, Array{UInt32}(Int(4))))
+@deprecate srand(r::MersenneTwister, filename::AbstractString, n::Integer=4) srand(r, read!(filename, Vector{UInt32}(uninitialized, Int(n))))
+@deprecate srand(filename::AbstractString, n::Integer=4) srand(read!(filename, Vector{UInt32}(uninitialized, Int(n))))
+@deprecate MersenneTwister(filename::AbstractString)  srand(MersenneTwister(0), read!(filename, Vector{UInt32}(uninitialized, Int(4))))
 
 # PR #21974
 @deprecate versioninfo(verbose::Bool) versioninfo(verbose=verbose)
@@ -1263,13 +1263,8 @@ deprecate(Base, :DSP, 2)
 using .DSP
 export conv, conv2, deconv, filt, filt!, xcorr
 
-@deprecate_binding Test nothing true ", run `using Test` instead"
-
 @deprecate_moved SharedArray "SharedArrays" true true
 
-@deprecate_binding Mmap nothing true ", run `using Mmap` instead"
-
-@deprecate_binding Profile nothing true ", run `using Profile` instead"
 @eval @deprecate_moved $(Symbol("@profile")) "Profile" true true
 
 @deprecate_moved base64encode "Base64" true true
@@ -1285,11 +1280,13 @@ export conv, conv2, deconv, filt, filt!, xcorr
 
 @deprecate_moved crc32c "CRC32c" true true
 
-@deprecate_binding Dates nothing true ", run `using Dates` instead"
 @deprecate_moved DateTime "Dates" true true
 @deprecate_moved DateFormat "Dates" true true
 @eval @deprecate_moved $(Symbol("@dateformat_str")) "Dates" true true
 @deprecate_moved now "Dates" true true
+
+@deprecate_moved eigs "IterativeEigenSolvers" true true
+@deprecate_moved svds "IterativeEigenSolvers" true true
 
 # PR #21709
 @deprecate cov(x::AbstractVector, corrected::Bool) cov(x, corrected=corrected)
@@ -1353,9 +1350,9 @@ import .LinAlg: lufact, lufact!, qrfact, qrfact!, cholfact, cholfact!
 
 @deprecate read(s::IO, x::Ref) read!(s, x)
 
-@deprecate read(s::IO, t::Type, d1::Int, dims::Int...) read!(s, Array{t}(tuple(d1,dims...)))
-@deprecate read(s::IO, t::Type, d1::Integer, dims::Integer...) read!(s, Array{t}(convert(Tuple{Vararg{Int}},tuple(d1,dims...))))
-@deprecate read(s::IO, t::Type, dims::Dims) read!(s, Array{t}(dims))
+@deprecate read(s::IO, t::Type, d1::Int, dims::Int...) read!(s, Array{t}(uninitialized, tuple(d1,dims...)))
+@deprecate read(s::IO, t::Type, d1::Integer, dims::Integer...) read!(s, Array{t}(uninitialized, convert(Tuple{Vararg{Int}},tuple(d1,dims...))))
+@deprecate read(s::IO, t::Type, dims::Dims) read!(s, Array{t}(uninitialized, dims))
 
 function CartesianRange(start::CartesianIndex{N}, stop::CartesianIndex{N}) where N
     inds = map((f,l)->f:l, start.I, stop.I)
@@ -1884,6 +1881,11 @@ end
 @deprecate diagm(v::AbstractVector, k::Integer) diagm(k => v)
 @deprecate diagm(x::Number) fill(x, 1, 1)
 
+# deprecate BitArray{...}(shape...) constructors to BitArray{...}(uninitialized, shape...) equivalents
+@deprecate BitArray{N}(dims::Vararg{Int,N}) where {N}   BitArray{N}(uninitialized, dims)
+@deprecate BitArray(dims::NTuple{N,Int}) where {N}      BitArray(uninitialized, dims...)
+@deprecate BitArray(dims::Integer...)                   BitArray(uninitialized, dims)
+
 ## deprecate full
 export full
 # full no-op fallback
@@ -2040,9 +2042,31 @@ end
 # issue #22849
 @deprecate reinterpret(::Type{T}, a::Array{S}, dims::NTuple{N,Int}) where {T, S, N} reshape(reinterpret(T, vec(a)), dims)
 @deprecate reinterpret(::Type{T}, a::SparseMatrixCSC{S}, dims::NTuple{N,Int}) where {T, S, N} reinterpret(T, reshape(a, dims))
+@deprecate reinterpret(::Type{T}, a::ReinterpretArray{S}, dims::NTuple{N,Int}) where {T, S, N} reshape(reinterpret(T, vec(a)), dims)
 
 # issue #24006
 @deprecate linearindices(s::AbstractString) eachindex(s)
+
+# deprecate Array(shape...)-like constructors to Array(uninitialized, shape...) equivalents
+# --> former primitive constructors
+@deprecate Array{T,1}(m::Int) where {T}                      Array{T,1}(uninitialized, m)
+@deprecate Array{T,2}(m::Int, n::Int) where {T}              Array{T,2}(uninitialized, m, n)
+@deprecate Array{T,3}(m::Int, n::Int, o::Int) where {T}      Array{T,3}(uninitialized, m, n, o)
+@deprecate Array{T,N}(d::Vararg{Int,N}) where {T,N}          Array{T,N}(uninitialized, d)
+@deprecate Array{T,N}(d::NTuple{N,Int}) where {T,N}          Array{T,N}(uninitialized, d)
+@deprecate Array{T}(m::Int) where {T}                        Array{T}(uninitialized, m)
+@deprecate Array{T}(m::Int, n::Int) where {T}                Array{T}(uninitialized, m, n)
+@deprecate Array{T}(m::Int, n::Int, o::Int) where {T}        Array{T}(uninitialized, m, n, o)
+@deprecate Array{T}(d::NTuple{N,Int}) where {T,N}            Array{T}(uninitialized, d)
+# --> former convenience constructors
+@deprecate Vector{T}(m::Integer) where {T}                          Vector{T}(uninitialized, m)
+@deprecate Matrix{T}(m::Integer, n::Integer) where {T}              Matrix{T}(uninitialized, m, n)
+@deprecate Array{T}(m::Integer) where {T}                           Array{T}(uninitialized, m)
+@deprecate Array{T}(m::Integer, n::Integer) where {T}               Array{T}(uninitialized, m, n)
+@deprecate Array{T}(m::Integer, n::Integer, o::Integer) where {T}   Array{T}(uninitialized, m, n, o)
+@deprecate Array{T}(d::Integer...) where {T}                        Array{T}(uninitialized, d)
+@deprecate Vector(m::Integer)                                       Vector(uninitialized, m)
+@deprecate Matrix(m::Integer, n::Integer)                           Matrix(uninitialized, m, n)
 
 # deprecate IntSet to BitSet
 @deprecate_binding IntSet BitSet
@@ -2115,6 +2139,16 @@ end
     @deprecate chol!(x::Number, uplo) chol(x) false
 end
 
+# deprecate RowVector{T}(shape...) constructors to RowVector{T}(uninitialized, shape...) equivalents
+@deprecate RowVector{T}(n::Int) where {T}               RowVector{T}(uninitialized, n)
+@deprecate RowVector{T}(n1::Int, n2::Int) where {T}     RowVector{T}(uninitialized, n1, n2)
+@deprecate RowVector{T}(n::Tuple{Int}) where {T}        RowVector{T}(uninitialized, n)
+@deprecate RowVector{T}(n::Tuple{Int,Int}) where {T}    RowVector{T}(uninitialized, n)
+
+@deprecate cumsum(A::AbstractArray)     cumsum(A, 1)
+@deprecate cumsum_kbn(A::AbstractArray) cumsum_kbn(A, 1)
+@deprecate cumprod(A::AbstractArray)    cumprod(A, 1)
+
 # issue #16307
 @deprecate finalizer(o, f::Function) finalizer(f, o)
 # This misses other callables but they are very rare in the wild
@@ -2124,6 +2158,29 @@ end
 # This is almost certainly going to be a silent failure for code that is not updated.
 finalizer(f::Ptr{Void}, o::Ptr{Void}) = invoke(finalizer, Tuple{Ptr{Void}, Any}, f, o)
 finalizer(f::Ptr{Void}, o::Function) = invoke(finalizer, Tuple{Ptr{Void}, Any}, f, o)
+
+# Broadcast extension API (#23939)
+@eval Broadcast begin
+    Base.@deprecate_binding containertype combine_styles false
+    Base.@deprecate_binding _containertype BroadcastStyle false
+    Base.@deprecate_binding promote_containertype BroadcastStyle false
+    Base.@deprecate_binding broadcast_c! broadcast! false ", broadcast_c!(f, ::Type, ::Type, C, As...) should become broadcast!(f, C, As...) (see the manual chapter Interfaces)"
+    Base.@deprecate_binding broadcast_c broadcast false ", `broadcast_c(f, ::Type{C}, As...)` should become `broadcast(f, C, nothing, nothing, As...))` (see the manual chapter Interfaces)"
+    Base.@deprecate_binding broadcast_t broadcast false ", broadcast_t(f, ::Type{ElType}, shape, iter, As...)` should become `broadcast(f, Broadcast.DefaultArrayStyle{N}(), ElType, shape, As...))` (see the manual chapter Interfaces)"
+end
+
+# issue #24822
+@deprecate_binding Display AbstractDisplay
+
+# 24595
+@deprecate falses(A::AbstractArray) falses(size(A))
+@deprecate trues(A::AbstractArray) trues(size(A))
+
+# issue #24794
+@deprecate linspace(start, stop)     linspace(start, stop, 50)
+@deprecate logspace(start, stop)     logspace(start, stop, 50)
+
+@deprecate merge!(repo::LibGit2.GitRepo, args...; kwargs...) LibGit2.merge!(repo, args...; kwargs...)
 
 # #24490
 # info() warn() and logging() are deprecated (see util.jl). When removing

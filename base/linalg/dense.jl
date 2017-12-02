@@ -115,7 +115,7 @@ isposdef(x::Number) = imag(x)==0 && real(x) > 0
 """
     stride1(A) -> Int
 
-Returns the distance between successive array elements
+Return the distance between successive array elements
 in dimension 1 in units of element size.
 
 # Examples
@@ -158,7 +158,7 @@ vecnorm2(x::Union{Array{T},StridedVector{T}}) where {T<:BlasFloat} =
 """
     triu!(M, k::Integer)
 
-Returns the upper triangle of `M` starting from the `k`th superdiagonal,
+Return the upper triangle of `M` starting from the `k`th superdiagonal,
 overwriting `M` in the process.
 
 # Examples
@@ -202,7 +202,7 @@ triu(M::Matrix, k::Integer) = triu!(copy(M), k)
 """
     tril!(M, k::Integer)
 
-Returns the lower triangle of `M` starting from the `k`th superdiagonal, overwriting `M` in
+Return the lower triangle of `M` starting from the `k`th superdiagonal, overwriting `M` in
 the process.
 
 # Examples
@@ -376,7 +376,7 @@ julia> kron(A, B)
 ```
 """
 function kron(a::AbstractMatrix{T}, b::AbstractMatrix{S}) where {T,S}
-    R = Matrix{promote_op(*,T,S)}(size(a,1)*size(b,1), size(a,2)*size(b,2))
+    R = Matrix{promote_op(*,T,S)}(uninitialized, size(a,1)*size(b,1), size(a,2)*size(b,2))
     m = 1
     for j = 1:size(a,2), l = 1:size(b,2), i = 1:size(a,1)
         aij = a[i,j]
@@ -1273,7 +1273,7 @@ function pinv(A::StridedMatrix{T}, tol::Real) where T
     m, n = size(A)
     Tout = typeof(zero(T)/sqrt(one(T) + one(T)))
     if m == 0 || n == 0
-        return Matrix{Tout}(n, m)
+        return Matrix{Tout}(uninitialized, n, m)
     end
     if istril(A)
         if istriu(A)

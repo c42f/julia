@@ -48,7 +48,7 @@ end
     @spawnat
 
 Create a closure around an expression and run the closure
-asynchronously on process `p`. Returns a [`Future`](@ref) to the result.
+asynchronously on process `p`. Return a [`Future`](@ref) to the result.
 Accepts two arguments, `p` and an expression.
 
 # Examples
@@ -214,7 +214,7 @@ function splitrange(N::Int, np::Int)
     each = div(N,np)
     extras = rem(N,np)
     nchunks = each > 0 ? np : extras
-    chunks = Vector{UnitRange{Int}}(nchunks)
+    chunks = Vector{UnitRange{Int}}(uninitialized, nchunks)
     lo = 1
     for i in 1:nchunks
         hi = lo + each - 1

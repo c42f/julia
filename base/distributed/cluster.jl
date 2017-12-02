@@ -245,12 +245,12 @@ end
 function redirect_worker_output(ident, stream)
     @schedule while !eof(stream)
         line = readline(stream)
-        if startswith(line, "\tFrom worker ")
+        if startswith(line, "      From worker ")
             # STDOUT's of "additional" workers started from an initial worker on a host are not available
             # on the master directly - they are routed via the initial worker's STDOUT.
             println(line)
         else
-            println("\tFrom worker $(ident):\t$line")
+            println("      From worker $(ident):\t$line")
         end
     end
 end
@@ -595,8 +595,8 @@ end
 
 additional_io_objs=Dict()
 function launch_additional(np::Integer, cmd::Cmd)
-    io_objs = Vector{Any}(np)
-    addresses = Vector{Any}(np)
+    io_objs = Vector{Any}(uninitialized, np)
+    addresses = Vector{Any}(uninitialized, np)
 
     for i in 1:np
         io = open(detach(cmd), "r+")
@@ -644,14 +644,14 @@ end
 """
     Base.cluster_cookie() -> cookie
 
-Returns the cluster cookie.
+Return the cluster cookie.
 """
 cluster_cookie() = LPROC.cookie
 
 """
     Base.cluster_cookie(cookie) -> cookie
 
-Sets the passed cookie as the cluster cookie, then returns it.
+Set the passed cookie as the cluster cookie, then returns it.
 """
 function cluster_cookie(cookie)
     # The cookie must be an ASCII string with length <=  HDR_COOKIE_LEN
@@ -764,7 +764,7 @@ end
 """
     procs()
 
-Returns a list of all process identifiers.
+Return a list of all process identifiers.
 """
 function procs()
     if myid() == 1 || (PGRP.topology == :all_to_all  && !isclusterlazy())
@@ -795,7 +795,7 @@ end
 """
     procs(pid::Integer)
 
-Returns a list of all process identifiers on the same physical node.
+Return a list of all process identifiers on the same physical node.
 Specifically all workers bound to the same ip-address as `pid` are returned.
 """
 function procs(pid::Integer)
@@ -815,7 +815,7 @@ end
 """
     workers()
 
-Returns a list of all worker process identifiers.
+Return a list of all worker process identifiers.
 """
 function workers()
     allp = procs()
@@ -835,7 +835,7 @@ end
 """
     rmprocs(pids...; waitfor=typemax(Int))
 
-Removes the specified workers. Note that only process 1 can add or remove
+Remove the specified workers. Note that only process 1 can add or remove
 workers.
 
 Argument `waitfor` specifies how long to wait for the workers to shut down:
@@ -926,7 +926,7 @@ end
 """
     Base.worker_id_from_socket(s) -> pid
 
-A low-level API which given a `IO` connection or a `Worker`,
+A low-level API which, given a `IO` connection or a `Worker`,
 returns the `pid` of the worker it is connected to.
 This is useful when writing custom [`serialize`](@ref) methods for a type,
 which optimizes the data written out depending on the receiving process id.

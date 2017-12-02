@@ -60,7 +60,7 @@ end
 
 # convert dual arrays (ips, interpreter_frames) to a single array of locations
 function _reformat_bt(bt, bt2)
-    ret = Array{Union{InterpreterIP,Ptr{Void}},1}()
+    ret = Vector{Union{InterpreterIP,Ptr{Void}}}()
     i, j = 1, 1
     while i <= length(bt)
         ip = bt[i]::Ptr{Void}
@@ -183,7 +183,7 @@ length(ebo::ExponentialBackOff) = ebo.n
 """
     retry(f::Function;  delays=ExponentialBackOff(), check=nothing) -> Function
 
-Returns an anonymous function that calls function `f`.  If an exception arises,
+Return an anonymous function that calls function `f`.  If an exception arises,
 `f` is repeatedly called again, each time `check` returns `true`, after waiting the
 number of seconds specified in `delays`.  `check` should input `delays`'s
 current state and the `Exception`.

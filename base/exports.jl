@@ -18,6 +18,7 @@ export
     Threads,
     Iterators,
     Distributed,
+    Broadcast,
 
 # Types
     AbstractChannel,
@@ -555,7 +556,6 @@ export
     eigfact,
     eigmax,
     eigmin,
-    eigs,
     eigvals,
     eigvals!,
     eigvecs,
@@ -602,7 +602,6 @@ export
     svd,
     svdfact!,
     svdfact,
-    svds,
     svdvals!,
     svdvals,
     sylvester,
@@ -1070,7 +1069,7 @@ export
     UDPSocket,
 
 # multimedia I/O
-    Display,
+    AbstractDisplay,
     display,
     displayable,
     TextDisplay,

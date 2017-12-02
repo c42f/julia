@@ -122,7 +122,7 @@ end
 function launch(manager::SSHManager, params::Dict, launched::Array, launch_ntfy::Condition)
     # Launch one worker on each unique host in parallel. Additional workers are launched later.
     # Wait for all launches to complete.
-    launch_tasks = Vector{Any}(length(manager.machines))
+    launch_tasks = Vector{Any}(uninitialized, length(manager.machines))
 
     for (i,(machine, cnt)) in enumerate(manager.machines)
         let machine=machine, cnt=cnt
@@ -259,7 +259,7 @@ end
     ssh_tunnel(user, host, bind_addr, port, sshflags) -> localport
 
 Establish an SSH tunnel to a remote worker.
-Returns a port number `localport` such that `localhost:localport` connects to `host:port`.
+Return a port number `localport` such that `localhost:localport` connects to `host:port`.
 """
 function ssh_tunnel(user, host, bind_addr, port, sshflags)
     port = Int(port)

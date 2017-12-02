@@ -1,5 +1,7 @@
 # This file is a part of Julia. License is MIT: https://julialang.org/license
 
+__precompile__(true)
+
 """
 Utilities for monitoring files and file descriptors for events.
 """
@@ -189,11 +191,11 @@ mutable struct _FDWatcher
             associate_julia_struct(handle, this)
             err = ccall(:uv_poll_init_socket, Int32, (Ptr{Void},   Ptr{Void}, Ptr{Void}),
                                                       eventloop(), handle,    fd.handle)
-            finalizer(uvfinalize, this)
             if err != 0
                 Libc.free(handle)
                 throw(UVError("FDWatcher", err))
             end
+            finalizer(uvfinalize, this)
             return this
         end
     end

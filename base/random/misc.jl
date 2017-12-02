@@ -33,11 +33,11 @@ julia> bitrand(rng, 10)
   true
 ```
 """
-bitrand(r::AbstractRNG, dims::Dims)   = rand!(r, BitArray(dims))
-bitrand(r::AbstractRNG, dims::Integer...) = rand!(r, BitArray(convert(Dims, dims)))
+bitrand(r::AbstractRNG, dims::Dims)   = rand!(r, BitArray(uninitialized, dims))
+bitrand(r::AbstractRNG, dims::Integer...) = rand!(r, BitArray(uninitialized, convert(Dims, dims)))
 
-bitrand(dims::Dims)   = rand!(BitArray(dims))
-bitrand(dims::Integer...) = rand!(BitArray(convert(Dims, dims)))
+bitrand(dims::Dims)   = rand!(BitArray(uninitialized, dims))
+bitrand(dims::Integer...) = rand!(BitArray(uninitialized, convert(Dims, dims)))
 
 
 ## randstring (often useful for temporary filenames/dirnames)
@@ -145,8 +145,7 @@ randsubseq(A::AbstractArray, p::Real) = randsubseq(GLOBAL_RNG, A, p)
 
 "Return a random `Int` (masked with `mask`) in ``[0, n)``, when `n <= 2^52`."
 @inline function rand_lt(r::AbstractRNG, n::Int, mask::Int=nextpow2(n)-1)
-    # this duplicates the functionality of RangeGenerator objects,
-    # to optimize this special case
+    # this duplicates the functionality of rand(1:n), to optimize this special case
     while true
         x = (rand_ui52_raw(r) % Int) & mask
         x < n && return x
@@ -250,7 +249,7 @@ julia> randperm(MersenneTwister(1234), 4)
  3
 ```
 """
-randperm(r::AbstractRNG, n::Integer) = randperm!(r, Vector{Int}(n))
+randperm(r::AbstractRNG, n::Integer) = randperm!(r, Vector{Int}(uninitialized, n))
 randperm(n::Integer) = randperm(GLOBAL_RNG, n)
 
 """
@@ -263,7 +262,7 @@ optional `rng` argument specifies a random number generator (see
 
 # Examples
 ```jldoctest
-julia> randperm!(MersenneTwister(1234), Vector{Int}(4))
+julia> randperm!(MersenneTwister(1234), Vector{Int}(uninitialized, 4))
 4-element Array{Int64,1}:
  2
  1
@@ -311,7 +310,7 @@ julia> randcycle(MersenneTwister(1234), 6)
  2
 ```
 """
-randcycle(r::AbstractRNG, n::Integer) = randcycle!(r, Vector{Int}(n))
+randcycle(r::AbstractRNG, n::Integer) = randcycle!(r, Vector{Int}(uninitialized, n))
 randcycle(n::Integer) = randcycle(GLOBAL_RNG, n)
 
 """
@@ -323,7 +322,7 @@ The optional `rng` argument specifies a random number generator, see
 
 # Examples
 ```jldoctest
-julia> randcycle!(MersenneTwister(1234), Vector{Int}(6))
+julia> randcycle!(MersenneTwister(1234), Vector{Int}(uninitialized, 6))
 6-element Array{Int64,1}:
  3
  5

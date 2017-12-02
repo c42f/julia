@@ -233,7 +233,7 @@ end
 """
     head_and_tail(c, n) -> head, tail
 
-Returns `head`: the first `n` elements of `c`;
+Return `head`: the first `n` elements of `c`;
 and `tail`: an iterator over the remaining elements.
 
 ```jldoctest
@@ -255,7 +255,7 @@ julia> collect(c)
 ```
 """
 function head_and_tail(c, n)
-    head = Vector{eltype(c)}(n)
+    head = Vector{eltype(c)}(uninitialized, n)
     s = start(c)
     i = 0
     while i < n && !done(c, s)

@@ -82,6 +82,14 @@ Language changes
     For example, `f() = (global sin = "gluttony"; nothing)` will now resolve which module
     contains `sin` eagerly, rather than delaying that decision until `f` is run. ([#22984]).
 
+  * Uninitialized `BitArray` constructors of the form `BitArray[{N}](shape...)` have been
+    deprecated in favor of equivalents accepting `uninitialized` (an alias for
+    `Uninitialized()`) as their first argument, as in
+    `BitArray[{N}](uninitialized, shape...)`. For example, `BitVector(3)` is now
+    `BitVector(uninitialized, 3)`, `BitMatrix((2, 4))` is now
+    `BitMatrix(uninitialized, (2, 4))`, and `BitArray{3}(11, 13, 17)` is now
+    `BitArray{3}(uninitialized, 11, 14, 17)` ([#24785]).
+
   * Dispatch rules have been simplified:
     method matching is now determined exclusively by subtyping;
     the rule that method type parameters must also be captured has been removed.
@@ -290,6 +298,11 @@ This section lists changes that do not have deprecation warnings.
     Its return value has been removed. Use the `process_running` function
     to determine if a process has already exited.
 
+  * Broadcasting has been redesigned with an extensible public interface. The new API is
+    documented at https://docs.julialang.org/en/latest/manual/interfaces/#Interfaces-1.
+    `AbstractArray` types that specialized broadcasting using the old internal API will
+    need to switch to the new API. ([#20740])
+
 Library improvements
 --------------------
 
@@ -408,6 +421,14 @@ Deprecated or removed
     Instead, reshape the array or add trailing indices so the dimensionality and number of indices
     match ([#14770], [#23628]).
 
+  * Uninitialized `Array` constructors of the form
+    `Array[{T,N}](shape...)` have been deprecated in favor of equivalents
+    accepting `uninitialized` (an alias for `Uninitialized()`) as their first argument,
+    as in `Array[{T,N}](uninitialized, shape...)`. For example,
+    `Vector(3)` is now `Vector(uninitialized, 3)`, `Matrix{Int}((2, 4))` is now,
+    `Matrix{Int}(uninitialized, (2, 4))`, and `Array{Float32,3}(11, 13, 17)` is now
+    `Array{Float32,3}(uninitialized, 11, 13, 17)` ([#24781]).
+
   * `fill!(A::Diagonal, x)` and `fill!(A::AbstractTriangular, x)` have been deprecated
     in favor of `Base.LinAlg.fillslots!(A, x)` ([#24413]).
 
@@ -421,6 +442,13 @@ Deprecated or removed
 
   * `whos` has been renamed `varinfo`, and now returns a markdown table instead of printing
     output ([#12131]).
+
+  * Uninitialized `RowVector` constructors of the form `RowVector{T}(shape...)` have been
+    deprecated in favor of equivalents accepting `uninitialized` (an alias for
+    `Uninitialized()`) as their first argument, as in
+    `RowVector{T}(uninitialized, shape...)`. For example, `RowVector{Int}(3)` is now
+    `RowVector{Int}(uninitialized, 3)`, and `RowVector{Float32}((1, 4))` is now
+    `RowVector{Float32}(uninitialized, (1, 4))` ([#24786]).
 
   * `writecsv(io, a; opts...)` has been deprecated in favor of
     `writedlm(io, a, ','; opts...)` ([#23529]).
@@ -515,6 +543,8 @@ Deprecated or removed
     input stream are deprecated. Use e.g. `read(pipeline(stdin, cmd))` instead ([#22762]).
 
   * The unexported type `AbstractIOBuffer` has been renamed to `GenericIOBuffer` ([#17360] [#22796]).
+
+  * `Display` has been renamed to `AbstractDisplay` ([#24831]).
 
   * Remaining vectorized methods over `SparseVector`s, particularly `floor`, `ceil`,
     `trunc`, `round`, and most common transcendental functions such as `exp`, `log`, and
@@ -662,6 +692,12 @@ Deprecated or removed
 
   * `a:b` is deprecated for constructing a `StepRange` when `a` and `b` have physical units
     (Dates and Times). Use `a:s:b`, where `s = Dates.Day(1)` or `s = Dates.Second(1)`.
+
+  * `trues(A::AbstractArray)` and `falses(A::AbstractArray)` are deprecated in favor of
+    `trues(size(A))` and `falses(size(A))` respectively ([#24595]).
+
+  * `cumsum`, `cumprod`, `accumulate`, and their mutating versions now require a `dim`
+    argument instead of defaulting to using the first dimension ([#24684]).
 
 Command-line option changes
 ---------------------------
@@ -1298,6 +1334,8 @@ Deprecated or removed
 
   * `EnvHash` has been renamed to `EnvDict` ([#24167]).
 
+  * `linspace` and `logspace` now require an explicit number of elements to be supplied rather than defaulting to `50`.
+
 Command-line option changes
 ---------------------------
 
@@ -1487,6 +1525,7 @@ Command-line option changes
 [#20549]: https://github.com/JuliaLang/julia/issues/20549
 [#20575]: https://github.com/JuliaLang/julia/issues/20575
 [#20609]: https://github.com/JuliaLang/julia/issues/20609
+[#20740]: https://github.com/JuliaLang/julia/issues/20740
 [#20816]: https://github.com/JuliaLang/julia/issues/20816
 [#20889]: https://github.com/JuliaLang/julia/issues/20889
 [#20912]: https://github.com/JuliaLang/julia/issues/20912

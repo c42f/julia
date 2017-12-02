@@ -17,7 +17,7 @@ abstract type AbstractDateToken end
 `locale`. If a `tryparsenext` method does not need a locale, it can leave
 the argument out in the method definition.
 
-Returns a tuple of 2 elements `(res, idx)`, where:
+Return a tuple of 2 elements `(res, idx)`, where:
 
 * `res` is a `Nullable{T}` - the result of the parsing, null if parsing failed.
 * `idx` is an `Int` - if parsing failed, the index at which it failed; if
@@ -483,7 +483,7 @@ end
 
 function format(dt::TimeType, fmt::DateFormat, bufsize=12)
     # preallocate to reduce resizing
-    io = IOBuffer(Vector{UInt8}(bufsize), true, true)
+    io = IOBuffer(Vector{UInt8}(uninitialized, bufsize), true, true)
     format(io, dt, fmt)
     String(io.data[1:io.ptr - 1])
 end

@@ -10,9 +10,6 @@
 
 precompile(Tuple{typeof(Base.pointer), Array{UInt8, 1}, UInt64})
 precompile(Tuple{typeof(Base.convert), Type{Ptr{Int32}}, Ptr{UInt8}})
-if USE_GPL_LIBS
-precompile(Tuple{typeof(Base.SparseArrays.CHOLMOD.set_print_level), Array{UInt8, 1}, Int64})
-end
 precompile(Tuple{Type{Base.Multimedia.TextDisplay}, Base.TTY})
 precompile(Tuple{typeof(Base._start)})
 precompile(Tuple{typeof(Base.copy!), Array{String, 1}, Int64, Array{Any, 1}, Int64, Int64})
@@ -202,7 +199,7 @@ precompile(Tuple{typeof(Base._rsearchindex), Array{Int8, 1}, Array{UInt8, 1}, In
 precompile(Tuple{typeof(Base._rsearch), Array{Int8, 1}, Array{UInt8, 1}, Int64})
 precompile(Tuple{typeof(Base.rsearch), Array{UInt8, 1}, Char, Int64})
 precompile(Tuple{typeof(Base.rsearch), Array{Int8, 1}, Char, Int64})
-precompile(Tuple{typeof(Base.splice!), Array{Base.Multimedia.Display, 1}, Int64, Array{Any, 1}})
+precompile(Tuple{typeof(Base.splice!), Array{Base.Multimedia.AbstractDisplay, 1}, Int64, Array{Any, 1}})
 precompile(Tuple{typeof(Core.Inference.isbits), Base.LineEdit.EmptyCompletionProvider})
 precompile(Tuple{typeof(Core.Inference.isbits), Base.LineEdit.EmptyHistoryProvider})
 precompile(Tuple{typeof(Base._setindex!), Base.Dict{Symbol, Any}, Base.LineEdit.Prompt, Symbol, Int64})
@@ -344,7 +341,7 @@ precompile(Tuple{typeof(Base.LineEdit.setup_prefix_keymap), Base.REPL.REPLHistor
 precompile(Tuple{typeof(Base.getindex), Type{Base.Dict{Any, Any}}, Base.Dict{Any, Any}, Base.Dict{Any, Any}, Base.Dict{Any, Any}, Base.Dict{Any, Any}, Base.Dict{Any, Any}, Base.Dict{Any, Any}})
 precompile(Tuple{typeof(Base.prepend!), Array{Base.Dict{Any, Any}, 1}, Array{Base.Dict{Any, Any}, 1}})
 precompile(Tuple{typeof(Base.REPL.mode_keymap), Base.LineEdit.Prompt})
-precompile(Tuple{typeof(Core.Inference.isbits), Array{Base.Multimedia.Display, 1}})
+precompile(Tuple{typeof(Core.Inference.isbits), Array{Base.Multimedia.AbstractDisplay, 1}})
 precompile(Tuple{typeof(Base.Multimedia.popdisplay), Base.REPL.REPLDisplay{Base.REPL.LineEditREPL}})
 precompile(Tuple{Type{String}, Base.BitArray{1}})
 precompile(Tuple{typeof(Base.REPL.ends_with_semicolon), String})

@@ -102,9 +102,6 @@ function choosetests(choices = [])
     end
 
     sparsetests = ["sparse/sparse", "sparse/sparsevector", "sparse/higherorderfns"]
-    if Base.USE_GPL_LIBS
-        append!(sparsetests, ["sparse/umfpack", "sparse/cholmod", "sparse/spqr"])
-    end
     if "sparse" in skip_tests
         filter!(x -> (x != "sparse" && !(x in sparsetests)), tests)
     elseif "sparse" in tests
@@ -130,9 +127,6 @@ function choosetests(choices = [])
                    "linalg/generic", "linalg/uniformscaling", "linalg/lq",
                    "linalg/hessenberg", "linalg/rowvector", "linalg/conjarray",
                    "linalg/blas"]
-    if Base.USE_GPL_LIBS
-        push!(linalgtests, "linalg/arnoldi")
-    end
 
     if "linalg" in skip_tests
         filter!(x -> (x != "linalg" && !(x in linalgtests)), tests)
@@ -181,6 +175,9 @@ function choosetests(choices = [])
         warn("Skipping Profile tests")
         filter!(x -> (x != "Profile"), tests)
     end
+
+    # The shift and invert solvers need SuiteSparse for sparse input
+    Base.USE_GPL_LIBS || filter!(x->x != "IterativeEigenSolvers", STDLIBS)
 
     filter!(x -> !(x in skip_tests), tests)
 

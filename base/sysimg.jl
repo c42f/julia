@@ -29,7 +29,7 @@ function include(path::AbstractString)
     end
     result
 end
-const _included_files = Array{Tuple{Module,String}}(0)
+const _included_files = Array{Tuple{Module,String},1}()
 function _include1(mod::Module, path)
     Core.Inference.push!(_included_files, (mod, ccall(:jl_prepend_cwd, Any, (Any,), path)))
     Core.include(mod, path)
@@ -145,19 +145,6 @@ Vector(::Uninitialized, m::Integer) = Vector{Any}(uninitialized, Int(m))
 Matrix(::Uninitialized, m::Integer, n::Integer) = Matrix{Any}(uninitialized, Int(m), Int(n))
 # empty vector constructor
 Vector() = Vector{Any}(uninitialized, 0)
-
-## preexisting dims-type-converting Array constructors for convenience, i.e. without uninitialized, to deprecate
-# type and dimensionality specified, accepting dims as series of Integers
-Vector{T}(m::Integer) where {T} = Vector{T}(Int(m))
-Matrix{T}(m::Integer, n::Integer) where {T} = Matrix{T}(Int(m), Int(n))
-# type but not dimensionality specified, accepting dims as series of Integers
-Array{T}(m::Integer) where {T} = Array{T,1}(Int(m))
-Array{T}(m::Integer, n::Integer) where {T} = Array{T,2}(Int(m), Int(n))
-Array{T}(m::Integer, n::Integer, o::Integer) where {T} = Array{T,3}(Int(m), Int(n), Int(o))
-Array{T}(d::Integer...) where {T} = Array{T}(convert(Tuple{Vararg{Int}}, d))
-# dimensionality but not type specified, accepting dims as series of Integers
-Vector(m::Integer) = Vector{Any}(Int(m))
-Matrix(m::Integer, n::Integer) = Matrix{Any}(Int(m), Int(n))
 
 
 include("associative.jl")
@@ -477,8 +464,6 @@ function __init__()
     init_threadcall()
 end
 
-include("precompile.jl")
-
 INCLUDE_STATE = 3 # include = include_relative
 
 end # baremodule Base
@@ -489,10 +474,27 @@ using Base
 unshift!(Base._included_files, (@__MODULE__, joinpath(@__DIR__, "sysimg.jl")))
 
 # load some stdlib packages but don't put their names in Main
-Base.require(:DelimitedFiles)
-Base.require(:Test)
+Base.require(:Base64)
+Base.require(:CRC32c)
 Base.require(:Dates)
+Base.require(:DelimitedFiles)
+Base.require(:FileWatching)
+Base.require(:IterativeEigenSolvers)
+Base.require(:Mmap)
+Base.require(:Profile)
+Base.require(:SharedArrays)
+Base.require(:SuiteSparse)
+Base.require(:Test)
+
+@eval Base begin
+    @deprecate_binding Test root_module(:Test) true ", run `using Test` instead"
+    @deprecate_binding Mmap root_module(:Mmap) true ", run `using Mmap` instead"
+    @deprecate_binding Profile root_module(:Profile) true ", run `using Profile` instead"
+    @deprecate_binding Dates root_module(:Dates) true ", run `using Dates` instead"
+end
 
 empty!(LOAD_PATH)
 
 Base.isfile("userimg.jl") && Base.include(Main, "userimg.jl")
+
+Base.include(Base, "precompile.jl")

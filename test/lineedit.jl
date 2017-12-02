@@ -22,9 +22,12 @@ charpos(buf, pos=position(buf)) = Base.unsafe_ind2chr(content(buf), pos+1)-1
 function transform!(f, s, i = -1) # i is char-based (not bytes) buffer position
     buf = buffer(s)
     i >= 0 && charseek(buf, i)
-    action = f(s)
-    if s isa LineEdit.MIState && action isa Symbol
-        s.last_action = action # simulate what happens in LineEdit.prompt!
+    # simulate what happens in LineEdit.set_action!
+    s isa LineEdit.MIState && (s.current_action = :unknown)
+    status = f(s)
+    if s isa LineEdit.MIState && status != :ignore
+        # simulate what happens in LineEdit.prompt!
+        s.last_action = s.current_action
     end
     content(s), charpos(buf), charpos(buf, getmark(buf))
 end
@@ -765,4 +768,46 @@ end
     # pop initial insert of "one two three"
     @test edit!(edit_undo!) == ""
     @test edit!(edit_undo!) == "" # nothing more to undo (this "beeps")
+end
+
+@testset "edit_indent_{left,right}" begin
+    local buf = IOBuffer()
+    write(buf, "1\n22\n333")
+    seek(buf, 0)
+    @test LineEdit.edit_indent(buf, -1) == false
+    @test transform!(buf->LineEdit.edit_indent(buf, -1), buf) == ("1\n22\n333", 0, 0)
+    @test transform!(buf->LineEdit.edit_indent(buf, +1), buf) == (" 1\n22\n333", 1, 0)
+    @test transform!(buf->LineEdit.edit_indent(buf, +2), buf) == ("   1\n22\n333", 3, 0)
+    @test transform!(buf->LineEdit.edit_indent(buf, -2), buf) == (" 1\n22\n333", 1, 0)
+    seek(buf, 0) # if the cursor is already on the left column, it stays there
+    @test transform!(buf->LineEdit.edit_indent(buf, -2), buf) == ("1\n22\n333", 0, 0)
+    seek(buf, 3) # between the two "2"
+    @test transform!(buf->LineEdit.edit_indent(buf, +3), buf) == ("1\n   22\n333", 6, 0)
+    @test transform!(buf->LineEdit.edit_indent(buf, -9), buf) == ("1\n22\n333", 3, 0)
+    seekend(buf) # position 8
+    @test transform!(buf->LineEdit.edit_indent(buf, +3), buf) == ("1\n22\n   333", 11, 0)
+    @test transform!(buf->LineEdit.edit_indent(buf, -1), buf) == ("1\n22\n  333", 10, 0)
+    @test transform!(buf->LineEdit.edit_indent(buf, -2), buf) == ("1\n22\n333", 8, 0)
+    @test transform!(buf->LineEdit.edit_indent(buf, -1), buf) == ("1\n22\n333", 8, 0)
+    @test transform!(buf->LineEdit.edit_indent(buf, +3), buf) == ("1\n22\n   333", 11, 0)
+    seek(buf, 5) # left column
+    @test transform!(buf->LineEdit.edit_indent(buf, -2), buf) == ("1\n22\n 333", 5, 0)
+end
+
+@testset "edit_transpose_lines_{up,down}!" begin
+    local buf
+    buf = IOBuffer()
+    write(buf, "l1\nl2\nl3")
+    seek(buf, 0)
+    @test LineEdit.edit_transpose_lines_up!(buf) == false
+    @test transform!(LineEdit.edit_transpose_lines_up!, buf) == ("l1\nl2\nl3", 0, 0)
+    @test transform!(LineEdit.edit_transpose_lines_down!, buf) == ("l2\nl1\nl3", 3, 0)
+    @test LineEdit.edit_transpose_lines_down!(buf) == true
+    @test String(take!(copy(buf))) == "l2\nl3\nl1"
+    @test LineEdit.edit_transpose_lines_down!(buf) == false
+    @test String(take!(copy(buf))) == "l2\nl3\nl1" # no change
+    LineEdit.edit_move_right(buf)
+    @test transform!(LineEdit.edit_transpose_lines_up!, buf) == ("l2\nl1\nl3", 4, 0)
+    LineEdit.edit_move_right(buf)
+    @test transform!(LineEdit.edit_transpose_lines_up!, buf) == ("l1\nl2\nl3", 2, 0)
 end

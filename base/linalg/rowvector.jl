@@ -12,6 +12,48 @@ By convention, a vector can be multiplied by a matrix on its left (`A * v`) wher
 vector can be multiplied by a matrix on its right (such that `v.' * A = (A.' * v).'`). It
 differs from a `1×n`-sized matrix by the facts that its transpose returns a vector and the
 inner product `v1.' * v2` returns a scalar, but will otherwise behave similarly.
+
+# Examples
+```jldoctest
+julia> a = [1; 2; 3; 4]
+4-element Array{Int64,1}:
+ 1
+ 2
+ 3
+ 4
+
+julia> RowVector(a)
+1×4 RowVector{Int64,Array{Int64,1}}:
+ 1  2  3  4
+
+julia> a.'
+1×4 RowVector{Int64,Array{Int64,1}}:
+ 1  2  3  4
+
+julia> a.'[3]
+3
+
+julia> a.'[1,3]
+3
+
+julia> a.'[3,1]
+ERROR: BoundsError: attempt to access 1×4 RowVector{Int64,Array{Int64,1}} at index [3, 1]
+[...]
+
+julia> a.'*a
+30
+
+julia> B = [1 2; 3 4; 5 6; 7 8]
+4×2 Array{Int64,2}:
+ 1  2
+ 3  4
+ 5  6
+ 7  8
+
+julia> a.'*B
+1×2 RowVector{Int64,Array{Int64,1}}:
+ 50  60
+```
 """
 struct RowVector{T,V<:AbstractVector} <: AbstractMatrix{T}
     vec::V
@@ -35,14 +77,16 @@ const ConjRowVector{T,CV<:ConjVector} = RowVector{T,CV}
 @inline RowVector{T}(vec::AbstractVector{T}) where {T} = RowVector{T,typeof(vec)}(vec)
 
 # Constructors that take a size and default to Array
-@inline RowVector{T}(n::Int) where {T} = RowVector{T}(Vector{transpose_type(T)}(n))
-@inline RowVector{T}(n1::Int, n2::Int) where {T} = n1 == 1 ?
-    RowVector{T}(Vector{transpose_type(T)}(n2)) :
-    error("RowVector expects 1×N size, got ($n1,$n2)")
-@inline RowVector{T}(n::Tuple{Int}) where {T} = RowVector{T}(Vector{transpose_type(T)}(n[1]))
-@inline RowVector{T}(n::Tuple{Int,Int}) where {T} = n[1] == 1 ?
-    RowVector{T}(Vector{transpose_type(T)}(n[2])) :
-    error("RowVector expects 1×N size, got $n")
+@inline RowVector{T}(::Uninitialized, n::Int) where {T} =
+    RowVector{T}(Vector{transpose_type(T)}(uninitialized, n))
+@inline RowVector{T}(::Uninitialized, n1::Int, n2::Int) where {T} =
+    n1 == 1 ? RowVector{T}(Vector{transpose_type(T)}(uninitialized, n2)) :
+        error("RowVector expects 1×N size, got ($n1,$n2)")
+@inline RowVector{T}(::Uninitialized, n::Tuple{Int}) where {T} =
+    RowVector{T}(Vector{transpose_type(T)}(uninitialized, n[1]))
+@inline RowVector{T}(::Uninitialized, n::Tuple{Int,Int}) where {T} =
+    n[1] == 1 ? RowVector{T}(Vector{transpose_type(T)}(uninitialized, n[2])) :
+        error("RowVector expects 1×N size, got $n")
 
 # Conversion of underlying storage
 convert(::Type{RowVector{T,V}}, rowvec::RowVector) where {T,V<:AbstractVector} =
@@ -88,7 +132,7 @@ vec(rowvec::RowVector) = rowvec.vec
 """
     conj(v::RowVector)
 
-Returns a [`ConjArray`](@ref) lazy view of the input, where each element is conjugated.
+Return a [`ConjArray`](@ref) lazy view of the input, where each element is conjugated.
 
 # Examples
 ```jldoctest

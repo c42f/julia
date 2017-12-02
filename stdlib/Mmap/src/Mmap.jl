@@ -1,5 +1,7 @@
 # This file is a part of Julia. License is MIT: https://julialang.org/license
 
+__precompile__(true)
+
 """
 Low level module for mmap (memory mapping of files).
 """
@@ -173,7 +175,7 @@ function mmap(io::IO,
 
     len = prod(dims) * sizeof(T)
     len >= 0 || throw(ArgumentError("requested size must be ≥ 0, got $len"))
-    len == 0 && return Array{T}(ntuple(x->0,Val(N)))
+    len == 0 && return Array{T}(uninitialized, ntuple(x->0,Val(N)))
     len < typemax(Int) - PAGESIZE || throw(ArgumentError("requested size must be < $(typemax(Int)-PAGESIZE), got $len"))
 
     offset >= 0 || throw(ArgumentError("requested offset must be ≥ 0, got $offset"))
@@ -257,7 +259,7 @@ function mmap(io::IOStream, ::Type{<:BitArray}, dims::NTuple{N,Integer},
             throw(ArgumentError("the given file does not contain a valid BitArray of size $(join(dims, 'x')) (open with \"r+\" mode to override)"))
         end
     end
-    B = BitArray{N}(ntuple(i->0,Val(N))...)
+    B = BitArray{N}(uninitialized, ntuple(i->0,Val(N))...)
     B.chunks = chunks
     B.len = n
     if N != 1

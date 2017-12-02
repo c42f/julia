@@ -132,7 +132,7 @@ function show_default(io::IO, @nospecialize(x))
     nb = sizeof(x)
     if nf != 0 || nb == 0
         if !show_circular(io, x)
-            recur_io = IOContext(io, :SHOWN_SET => x)
+            recur_io = IOContext(io, Pair{Symbol,Any}(:SHOWN_SET, x))
             for i in 1:nf
                 f = fieldname(t, i)
                 if !isdefined(x, f)
@@ -241,6 +241,13 @@ end
 
 show(io::IO, x::DataType) = show_datatype(io, x)
 
+# Check whether 'sym' (defined in module 'parent') is visible from module 'from'
+# If an object with this name exists in 'from', we need to check that it's the same object
+# and that it's not deprecated (to avoid deprecating warnings when calling getfield)
+isvisible(sym::Symbol, parent::Module, from::Module) =
+    isdefined(from, sym) && !isdeprecated(from, sym) && !isdeprecated(parent, sym) &&
+        getfield(from, sym) === getfield(parent, sym)
+
 function show_type_name(io::IO, tn::TypeName)
     if tn === UnionAll.name
         # by coincidence, `typeof(Type)` is a valid representation of the UnionAll type.
@@ -266,7 +273,10 @@ function show_type_name(io::IO, tn::TypeName)
     elseif globfunc
         print(io, "typeof(")
     end
-    if isdefined(tn, :module) && !(is_exported_from_stdlib(sym, tn.module) || (tn.module === Main && !hidden))
+    # Print module prefix unless type is visible from module passed to IOContext
+    # If :module is not set, default to Main. nothing can be used to force printing prefix
+    from = get(io, :module, Main)
+    if isdefined(tn, :module) && (from === nothing || !isvisible(sym, tn.module, from))
         show(io, tn.module)
         if !hidden
             print(io, ".")
@@ -391,7 +401,7 @@ function sourceinfo_slotnames(src::CodeInfo)
     slotnames = src.slotnames
     isa(slotnames, Array) || return String[]
     names = Dict{String,Int}()
-    printnames = Vector{String}(length(slotnames))
+    printnames = Vector{String}(uninitialized, length(slotnames))
     for i in eachindex(slotnames)
         name = string(slotnames[i])
         idx = get!(names, name, i)
@@ -1092,7 +1102,7 @@ function show_unquoted(io::IO, ex::Expr, indent::Int, prec::Int)
         if prec >= 0
             show_call(io, :call, args[1], args[3:end], indent)
         else
-            show_args = Vector{Any}(length(args) - 1)
+            show_args = Vector{Any}(uninitialized, length(args) - 1)
             show_args[1] = args[1]
             show_args[2:end] = args[3:end]
             show_list(io, show_args, ' ', indent)
@@ -2050,7 +2060,7 @@ function showarray(io::IO, X::AbstractArray, repr::Bool = true; header = true)
         # override usual show method for Vector{Method}: don't abbreviate long lists
         io = IOContext(io, :limit => false)
     end
-    (!repr && header) && print(io, summary(X))
+    (!repr && header) && summary(io, X)
     if !isempty(X)
         if !repr && header
             print(io, ":")

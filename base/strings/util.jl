@@ -492,7 +492,7 @@ julia> hex2bytes(a)
 function hex2bytes end
 
 hex2bytes(s::AbstractString) = hex2bytes(Vector{UInt8}(String(s)))
-hex2bytes(s::AbstractVector{UInt8}) = hex2bytes!(Vector{UInt8}(length(s) >> 1), s)
+hex2bytes(s::AbstractVector{UInt8}) = hex2bytes!(Vector{UInt8}(uninitialized, length(s) >> 1), s)
 
 """
     hex2bytes!(d::AbstractVector{UInt8}, s::AbstractVector{UInt8})
@@ -539,7 +539,7 @@ julia> bytes2hex(b)
 ```
 """
 function bytes2hex(a::AbstractArray{UInt8})
-    b = Vector{UInt8}(2*length(a))
+    b = Vector{UInt8}(uninitialized, 2*length(a))
     i = 0
     for x in a
         b[i += 1] = hex_chars[1 + x >> 4]

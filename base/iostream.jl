@@ -30,7 +30,7 @@ show(io::IO, s::IOStream) = print(io, "IOStream(", s.name, ")")
 """
     fd(stream)
 
-Returns the file descriptor backing the stream or file. Note that this function only applies
+Return the file descriptor backing the stream or file. Note that this function only applies
 to synchronous `File`'s and `IOStream`'s not to any of the asynchronous streams.
 """
 fd(s::IOStream) = Int(ccall(:jl_ios_fd, Clong, (Ptr{Void},), s.ios))
@@ -136,7 +136,7 @@ fdio(fd::Integer, own::Bool=false) = fdio(string("<fd ",fd,">"), fd, own)
     open(filename::AbstractString, [read::Bool, write::Bool, create::Bool, truncate::Bool, append::Bool]) -> IOStream
 
 Open a file in a mode specified by five boolean arguments. The default is to open files for
-reading only. Returns a stream for accessing the file.
+reading only. Return a stream for accessing the file.
 """
 function open(fname::AbstractString, rd::Bool, wr::Bool, cr::Bool, tr::Bool, ff::Bool)
     s = IOStream(string("<file ",fname,">"))
@@ -211,7 +211,7 @@ end
 # num bytes available without blocking
 nb_available(s::IOStream) = ccall(:jl_nb_available, Int32, (Ptr{Void},), s.ios)
 
-readavailable(s::IOStream) = read!(s, Vector{UInt8}(nb_available(s)))
+readavailable(s::IOStream) = read!(s, Vector{UInt8}(uninitialized, nb_available(s)))
 
 function read(s::IOStream, ::Type{UInt8})
     b = ccall(:ios_getc, Cint, (Ptr{Void},), s.ios)
@@ -330,7 +330,7 @@ requested bytes, until an error or end-of-file occurs. If `all` is `false`, at m
 all stream types support the `all` option.
 """
 function read(s::IOStream, nb::Integer; all::Bool=true)
-    b = Array{UInt8,1}(nb)
+    b = Vector{UInt8}(uninitialized, nb)
     nr = readbytes!(s, b, nb, all=all)
     resize!(b, nr)
 end

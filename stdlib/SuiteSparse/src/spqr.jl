@@ -22,8 +22,8 @@ const ORDERING_BESTAMD = Int32(9) # try COLAMD and AMD; pick best#
 # the best of AMD and METIS. METIS is not tried if it isn't installed.
 
 using ..SparseArrays: SparseMatrixCSC
-using ..SparseArrays.CHOLMOD
-using ..SparseArrays.CHOLMOD: change_stype!, free!
+using ..SuiteSparse.CHOLMOD
+using ..SuiteSparse.CHOLMOD: change_stype!, free!
 
 function _qr!(ordering::Integer, tol::Real, econ::Integer, getCTX::Integer,
         A::Sparse{Tv},
@@ -70,7 +70,7 @@ function _qr!(ordering::Integer, tol::Real, econ::Integer, getCTX::Integer,
     if e == C_NULL
         _E = Vector{CHOLMOD.SuiteSparse_long}()
     else
-        _E = Vector{CHOLMOD.SuiteSparse_long}(n)
+        _E = Vector{CHOLMOD.SuiteSparse_long}(uninitialized, n)
         for i in 1:n
             @inbounds _E[i] = unsafe_load(e, i) + 1
         end
@@ -85,7 +85,7 @@ function _qr!(ordering::Integer, tol::Real, econ::Integer, getCTX::Integer,
     if hpinv == C_NULL
         _HPinv = Vector{CHOLMOD.SuiteSparse_long}()
     else
-        _HPinv = Vector{CHOLMOD.SuiteSparse_long}(m)
+        _HPinv = Vector{CHOLMOD.SuiteSparse_long}(uninitialized, m)
         for i in 1:m
             @inbounds _HPinv[i] = unsafe_load(hpinv, i) + 1
         end

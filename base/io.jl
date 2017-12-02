@@ -64,14 +64,14 @@ function readavailable end
 """
     isreadable(io) -> Bool
 
-Returns `true` if the specified IO object is readable (if that can be determined).
+Return `true` if the specified IO object is readable (if that can be determined).
 """
 function isreadable end
 
 """
     iswritable(io) -> Bool
 
-Returns `true` if the specified IO object is writable (if that can be determined).
+Return `true` if the specified IO object is writable (if that can be determined).
 """
 function iswritable end
 function copy end
@@ -93,7 +93,7 @@ read(stream, t)
     write(filename::AbstractString, x)
 
 Write the canonical binary representation of a value to the given I/O stream or file.
-Returns the number of bytes written into the stream.
+Return the number of bytes written into the stream.
 
 You can write multiple values with the same `write` call. i.e. the following are equivalent:
 
@@ -169,14 +169,14 @@ wait_close(io::AbstractPipe) = (wait_close(pipe_writer(io)); wait_close(pipe_rea
 """
     nb_available(stream)
 
-Returns the number of bytes available for reading before a read from this stream or buffer will block.
+Return the number of bytes available for reading before a read from this stream or buffer will block.
 """
 nb_available(io::AbstractPipe) = nb_available(pipe_reader(io))
 
 """
     eof(stream) -> Bool
 
-Tests whether an I/O stream is at end-of-file. If the stream is not yet exhausted, this
+Test whether an I/O stream is at end-of-file. If the stream is not yet exhausted, this
 function will block to wait for more data if necessary, and then return `false`. Therefore
 it is always safe to read one byte after seeing `eof` return `false`. `eof` will return
 `false` as long as buffered data is still available, even if the remote end of a connection
@@ -637,7 +637,7 @@ Read at most `nb` bytes from `s`, returning a `Vector{UInt8}` of the bytes read.
 function read(s::IO, nb::Integer = typemax(Int))
     # Let readbytes! grow the array progressively by default
     # instead of taking of risk of over-allocating
-    b = Vector{UInt8}(nb == typemax(Int) ? 1024 : nb)
+    b = Vector{UInt8}(uninitialized, nb == typemax(Int) ? 1024 : nb)
     nr = readbytes!(s, b, nb)
     return resize!(b, nr)
 end
@@ -694,7 +694,7 @@ iteratorsize(::Type{EachLine}) = SizeUnknown()
 """
     mark(s)
 
-Add a mark at the current position of stream `s`. Returns the marked position.
+Add a mark at the current position of stream `s`. Return the marked position.
 
 See also [`unmark`](@ref), [`reset`](@ref), [`ismarked`](@ref).
 """
@@ -705,7 +705,7 @@ end
 """
     unmark(s)
 
-Remove a mark from stream `s`. Returns `true` if the stream was marked, `false` otherwise.
+Remove a mark from stream `s`. Return `true` if the stream was marked, `false` otherwise.
 
 See also [`mark`](@ref), [`reset`](@ref), [`ismarked`](@ref).
 """
@@ -718,8 +718,8 @@ end
 """
     reset(s)
 
-Reset a stream `s` to a previously marked position, and remove the mark. Returns the
-previously marked position. Throws an error if the stream is not marked.
+Reset a stream `s` to a previously marked position, and remove the mark. Return the
+previously marked position. Throw an error if the stream is not marked.
 
 See also [`mark`](@ref), [`unmark`](@ref), [`ismarked`](@ref).
 """
@@ -734,7 +734,7 @@ end
 """
     ismarked(s)
 
-Returns `true` if stream `s` is marked.
+Return `true` if stream `s` is marked.
 
 See also [`mark`](@ref), [`unmark`](@ref), [`reset`](@ref).
 """
@@ -791,7 +791,7 @@ passing them as the second argument.
 function countlines(io::IO, eol::Char='\n')
     isascii(eol) || throw(ArgumentError("only ASCII line terminators are supported"))
     aeol = UInt8(eol)
-    a = Vector{UInt8}(8192)
+    a = Vector{UInt8}(uninitialized, 8192)
     nl = 0
     while !eof(io)
         nb = readbytes!(io, a)
