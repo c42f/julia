@@ -310,8 +310,15 @@ end
     @test size(Matrix(uninitialized, 2,3)) == (2,3)
 
     # TODO: will throw MethodError after 0.6 deprecations are deleted
-    @test size(@test_deprecated Matrix{Int}()) == (0,0)
-    @test size(@test_deprecated Matrix()) == (0,0)
+    dw = Base.JLOptions().depwarn
+    if dw == 2
+        # FIXME: Remove this special case after deperror cleanup
+        @test_throws ErrorException Matrix{Int}()
+        @test_throws ErrorException Matrix()
+    else
+        @test size(@test_deprecated Matrix{Int}()) == (0,0)
+        @test size(@test_deprecated Matrix()) == (0,0)
+    end
     @test_throws MethodError Array{Int,3}()
 end
 @testset "get" begin
