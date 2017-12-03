@@ -480,7 +480,7 @@ function handle_message(logger::SimpleLogger, level, message, _module, group, id
     print_with_color(color, logger.stream, first(levelstr), "- ", bold=true)
     print(logger.stream, replace(message, '\n', "\n|  "))
     println(logger.stream, " -", levelstr, ":", _module, ":", basename(filepath), ":", line)
-    for (key,val) in kwargs
+    for (key,val) in pairs(kwargs)
         println(logger.stream, "|  ", key, " = ", val)
     end
 end

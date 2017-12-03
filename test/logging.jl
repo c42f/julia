@@ -49,8 +49,7 @@ end
     @test length(logs) == 3
 
     record = logs[1]
-
-    kwargs = Dict(record.kwargs)
+    kwargs = record.kwargs
 
     # Builtin metadata
     @test record._module == @__MODULE__
@@ -68,13 +67,13 @@ end
     # Keyword values accessible from message block
     record2 = logs[2]
     @test ismatch((Info,"test2"), record2)
-    kwargs = Dict(record2.kwargs)
+    kwargs = record2.kwargs
     @test kwargs[:value_in_msg_block] === 1000.0
 
     # Splatting of keywords
     record3 = logs[3]
     @test ismatch((Info,"test3"), record3)
-    kwargs = Dict(record3.kwargs)
+    kwargs = record3.kwargs
     @test sort(collect(keys(kwargs))) == [:a, :b]
     @test kwargs[:a] === 1
     @test kwargs[:b] === 2.0
