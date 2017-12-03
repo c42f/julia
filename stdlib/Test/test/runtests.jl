@@ -694,7 +694,7 @@ end
     @test fails[2] isa Test.LogTestFailure
     @test fails[3] isa Test.LogTestFailure
 end
-# Can't meaningfully use @test_deprecated, except with support in Base
+
 function newfunc()
     42
 end
@@ -704,13 +704,18 @@ end
     @test_deprecated oldfunc()
 
     # Expression passthrough
-    @test (@test_deprecated oldfunc()) == 42
+    if Base.JLOptions().depwarn != 2
+        @test (@test_deprecated oldfunc()) == 42
 
-    fails = @testset NoThrowTestSet "check that @test_deprecated detects bad input" begin
-        @test_deprecated newfunc()
-        @test_deprecated r"Not found in message" oldfunc()
+        fails = @testset NoThrowTestSet "check that @test_deprecated detects bad input" begin
+            @test_deprecated newfunc()
+            @test_deprecated r"Not found in message" oldfunc()
+        end
+        @test length(fails) == 2
+        @test fails[1] isa Test.LogTestFailure
+        @test fails[2] isa Test.LogTestFailure
+    else
+        @warn """Omitting `@test_deprecated` tests which can't yet
+                 be tested in --depwarn=error mode"""
     end
-    @test length(fails) == 2
-    @test fails[1] isa Test.LogTestFailure
-    @test fails[2] isa Test.LogTestFailure
 end
