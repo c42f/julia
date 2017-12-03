@@ -53,7 +53,7 @@ end
 end
 @testset "@test_warn" begin
     @test 1234 === @test_nowarn(1234)
-    @test 5678 === @test_warn("WARNING: foo", begin warn("foo"); 5678; end)
+    @test 5678 === @test_warn("WARNING: foo", begin println(STDERR, "WARNING: foo"); 5678; end)
     let a
         @test_throws UndefVarError(:a) a
         @test_nowarn a = 1
