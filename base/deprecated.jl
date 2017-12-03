@@ -2369,6 +2369,10 @@ info(io::IO, err::Exception; prefix="ERROR: ", kw...) =
 info(err::Exception; prefix="ERROR: ", kw...) =
     info(STDERR, err, prefix=prefix; kw...)
 
+# issue #24019
+@deprecate similar(a::Associative) empty(a)
+@deprecate similar(a::Associative, ::Type{Pair{K,V}}) where {K, V} empty(a, K, V)
+
 # END 0.7 deprecations
 
 # BEGIN 1.0 deprecations

@@ -14,7 +14,7 @@ end
 
 const secret_table_token = :__c782dbf1cf4d6a2e5e3865d7e95634f2e09b5902__
 
-haskey(d::Associative, k) = in(k,keys(d))
+haskey(d::Associative, k) = in(k, keys(d))
 
 function in(p::Pair, a::Associative, valcmp=(==))
     v = get(a,p[1],secret_table_token)
@@ -35,29 +35,29 @@ function summary(t::Associative)
     return string(typeof(t), " with ", n, (n==1 ? " entry" : " entries"))
 end
 
-struct KeyIterator{T<:Associative}
+struct KeySet{K, T <: Associative{K}} <: AbstractSet{K}
     dict::T
 end
+KeySet(dict::Associative) = KeySet{keytype(dict), typeof(dict)}(dict)
+
 struct ValueIterator{T<:Associative}
     dict::T
 end
 
-summary(iter::T) where {T<:Union{KeyIterator,ValueIterator}} =
+summary(iter::T) where {T<:Union{KeySet,ValueIterator}} =
     string(T.name, " for a ", summary(iter.dict))
 
-show(io::IO, iter::Union{KeyIterator,ValueIterator}) = show(io, collect(iter))
+show(io::IO, iter::Union{KeySet,ValueIterator}) = show(io, collect(iter))
 
-length(v::Union{KeyIterator,ValueIterator}) = length(v.dict)
-isempty(v::Union{KeyIterator,ValueIterator}) = isempty(v.dict)
-_tt1(::Type{Pair{A,B}}) where {A,B} = A
+length(v::Union{KeySet,ValueIterator}) = length(v.dict)
+isempty(v::Union{KeySet,ValueIterator}) = isempty(v.dict)
 _tt2(::Type{Pair{A,B}}) where {A,B} = B
-eltype(::Type{KeyIterator{D}}) where {D} = _tt1(eltype(D))
 eltype(::Type{ValueIterator{D}}) where {D} = _tt2(eltype(D))
 
-start(v::Union{KeyIterator,ValueIterator}) = start(v.dict)
-done(v::Union{KeyIterator,ValueIterator}, state) = done(v.dict, state)
+start(v::Union{KeySet,ValueIterator}) = start(v.dict)
+done(v::Union{KeySet,ValueIterator}, state) = done(v.dict, state)
 
-function next(v::KeyIterator, state)
+function next(v::KeySet, state)
     n = next(v.dict, state)
     n[1][1], n[2]
 end
@@ -67,7 +67,7 @@ function next(v::ValueIterator, state)
     n[1][2], n[2]
 end
 
-in(k, v::KeyIterator) = get(v.dict, k, secret_table_token) !== secret_table_token
+in(k, v::KeySet) = get(v.dict, k, secret_table_token) !== secret_table_token
 
 """
     keys(iterator)
@@ -100,7 +100,7 @@ julia> collect(keys(a))
  'a'
 ```
 """
-keys(a::Associative) = KeyIterator(a)
+keys(a::Associative) = KeySet(a)
 
 """
     values(a::Associative)
@@ -138,8 +138,23 @@ pairs(collection) = Generator(=>, keys(collection), values(collection))
 
 pairs(a::Associative) = a
 
+"""
+    empty(a::Associative, [index_type=keytype(a)], [value_type=valtype(a)])
+
+Create an empty `Associative` container which can accept indices of type `index_type` and
+values of type `value_type`. The second and third arguments are optional and default to the
+input's `keytype` and `valtype`, respectively. (If only one of the two types is specified,
+it is assumed to be the `value_type`, and the `index_type` we default to `keytype(a)`).
+
+Custom `Associative` subtypes may choose which specific associative type is best suited to
+return for the given index and value types, by specializing on the three-argument signature.
+The default is to return an empty `Dict`.
+"""
+empty(a::Associative) = empty(a, keytype(a), valtype(a))
+empty(a::Associative, ::Type{V}) where {V} = empty(a, keytype(a), V) # Note: this is the form which makes sense for `Vector`.
+
 function copy(a::Associative)
-    b = similar(a)
+    b = empty(a)
     for (k,v) in a
         b[k] = v
     end
@@ -418,7 +433,7 @@ Dict{Int64,String} with 1 entry:
 """
 function filter(f, d::Associative)
     # don't just do filter!(f, copy(d)): avoid making a whole copy of d
-    df = similar(d)
+    df = empty(d)
     try
         for pair in d
             if f(pair)
@@ -527,7 +542,7 @@ mutable struct ObjectIdDict <: Associative{Any,Any}
     ObjectIdDict(o::ObjectIdDict) = new(copy(o.ht))
 end
 
-similar(d::ObjectIdDict) = ObjectIdDict()
+empty(d::ObjectIdDict, ::Type{Any}, ::Type{Any}) = ObjectIdDict()
 
 function rehash!(t::ObjectIdDict, newsz = length(t.ht))
     t.ht = ccall(:jl_idtable_rehash, Any, (Any, Csize_t), t.ht, newsz)
