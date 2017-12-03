@@ -172,8 +172,12 @@ There's also some key value pairs which have conventional meaning:
     [0,1], and would generally be used to drive a progress bar or meter.
   * `max_log=integer` should be used as a hint to the backend that the message
     should be displayed no more than `max_log` times.
-  * `exception=ex` should be used to accompany a log message with an exception,
-    as an indication that something went wrong.
+  * `exception=ex` should be used to transport an exception with a log message,
+    often used with `@error`. `AbstractLoggers` should assume that the
+    associated backtrace can be obtained from `catch_backtrace()`. If the log
+    message is emitted outside the catch block which generated `ex`, an
+    associated backtrace `bt` may be attached explicitly using
+    `exception=(ex,bt)`.
 
 # Examples
 
