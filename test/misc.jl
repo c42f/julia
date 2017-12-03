@@ -2,6 +2,10 @@
 
 # Tests that do not really go anywhere else
 
+# The following tests for deprecated functionality are disabled when --depwarn=error.
+# TODO: Clean this up by reimplementing depwarn=error with a logger.
+if Base.JLOptions().depwarn != 2
+
 # Test info
 @test contains(sprint(info, "test"), "INFO:")
 @test contains(sprint(info, "test"), "INFO: test")
@@ -29,7 +33,7 @@ let bt = backtrace()
 end
 
 # PR #16213
-module LogTest
+@eval module LogTest
     function bar(io)
         info(io,"barinfo")
         warn(io,"barwarn")
@@ -134,6 +138,8 @@ logging()
 @test all(contains.(sprint(LogTest.bar), ["INFO: barinfo", "WARNING: barwarn", "ERROR: \"barerror\""]))
 @test all(contains.(sprint(LogTest.pooh), ["INFO: poohinfo", "WARNING: poohwarn", "ERROR: \"pooherror\""]))
 @test all(contains.(sprint(foo), ["INFO: fooinfo", "WARNING: foowarn", "ERROR: \"fooerror\""]))
+
+end
 
 # test assert() method
 @test_throws AssertionError assert(false)
