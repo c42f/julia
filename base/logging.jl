@@ -170,8 +170,8 @@ There's also some key value pairs which have conventional meaning:
   * `progress=fraction` should be used to indicate progress through an
     algorithmic step named by `message`, it should be a value in the interval
     [0,1], and would generally be used to drive a progress bar or meter.
-  * `max_log=integer` should be used as a hint to the backend that the message
-    should be displayed no more than `max_log` times.
+  * `maxlog=integer` should be used as a hint to the backend that the message
+    should be displayed no more than `maxlog` times.
   * `exception=ex` should be used to transport an exception with a log message,
     often used with `@error`. `AbstractLoggers` should assume that the
     associated backtrace can be obtained from `catch_backtrace()`. If the log
@@ -196,7 +196,7 @@ x = 10
 end
 
 for i=1:10000
-    @info "With the default backend, you will only see (i = \$i) ten times"  max_log=10
+    @info "With the default backend, you will only see (i = \$i) ten times"  maxlog=10
     @debug "Algorithm1" i progress=i/10000
 end
 ```

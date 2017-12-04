@@ -94,7 +94,7 @@ function isfixed(pkg::AbstractString, prepo::LibGit2.GitRepo, avail::Dict=availa
                 end
             else
                 @warn """Unknown $pkg commit $(info.sha1[1:8]), metadata may be
-                         ahead of package cache""" max_log=1
+                         ahead of package cache""" maxlog=1
             end
         end
     finally
@@ -156,7 +156,7 @@ function installed_version(pkg::AbstractString, prepo::LibGit2.GitRepo, avail::D
                 LibGit2.merge_base(prepo, head, sha1)
             else
                 @warn """Unknown $pkg commit $(sha1[1:8]), metadata may be ahead
-                         of package cache""" max_log=1
+                         of package cache""" maxlog=1
                 continue
             end
             string(base) == sha1 && push!(ancestors,ver)

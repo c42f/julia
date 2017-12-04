@@ -82,7 +82,7 @@ function depwarn(msg, funcsym)
         _id=(frame,funcsym),
         _group=:depwarn,
         caller=caller,
-        max_log=1
+        maxlog=1
     )
     nothing
 end
