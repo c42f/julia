@@ -1,6 +1,6 @@
 using Base.CoreLogging
 import Base.CoreLogging: BelowMinLevel, Debug, Info, Warn, Error,
-    handle_message, shouldlog
+    handle_message, shouldlog, min_enabled_level
 
 import Test: collect_test_logs, TestLogger
 
@@ -219,10 +219,19 @@ end
 #-------------------------------------------------------------------------------
 
 @testset "SimpleLogger" begin
-    @test shouldlog(SimpleLogger(STDERR), Debug) === false
-    @test shouldlog(SimpleLogger(STDERR), Info) === true
-    @test shouldlog(SimpleLogger(STDERR, Debug), Debug) === true
+    # Log level limiting
+    @test min_enabled_level(SimpleLogger(DevNull, Debug)) == Debug
+    @test min_enabled_level(SimpleLogger(DevNull, Error)) == Error
 
+    # Log limiting
+    logger = SimpleLogger(DevNull)
+    @test shouldlog(logger, Info, Base, :group, :asdf) === true
+    handle_message(logger, Info, "msg", Base, :group, :asdf, "somefile", 1, maxlog=2)
+    @test shouldlog(logger, Info, Base, :group, :asdf) === true
+    handle_message(logger, Info, "msg", Base, :group, :asdf, "somefile", 1, maxlog=2)
+    @test shouldlog(logger, Info, Base, :group, :asdf) === false
+
+    # Log formatting
     function genmsg(level, message, _module, filepath, line; kws...)
         io = IOBuffer()
         logger = SimpleLogger(io, Debug)
@@ -231,7 +240,7 @@ end
         s = String(take!(io))
         # Remove the small amount of color, as `Base.print_with_color` can't be
         # simply controlled.
-        s = replace(s, r"^\e\[1m\e\[..m(.- )\e\[39m\e\[22m", s"\1")
+        s = replace(s, r"^\e\[1m\e\[..m(.*)\e\[39m\e\[22m", s"\1")
         # println(s)
         s
     end

@@ -464,25 +464,40 @@ Simplistic logger for logging all messages with level greater than or equal to
 struct SimpleLogger <: AbstractLogger
     stream::IO
     min_level::LogLevel
+    message_limits::Dict{Any,Int}
 end
-SimpleLogger(stream::IO=STDERR, level=Info) = SimpleLogger(stream, level)
+SimpleLogger(stream::IO=STDERR, level=Info) = SimpleLogger(stream, level, Dict{Any,Int}())
 
-shouldlog(logger::SimpleLogger, level, args...) = !(level < logger.min_level)
+shouldlog(logger::SimpleLogger, level, _module, group, id) =
+    get(logger.message_limits, id, 1) > 0
 
 min_enabled_level(logger::SimpleLogger) = logger.min_level
 
 function handle_message(logger::SimpleLogger, level, message, _module, group, id,
-                        filepath, line; kwargs...)
+                        filepath, line; maxlog=nothing, kwargs...)
+    if maxlog != nothing && maxlog isa Integer
+        remaining = get!(logger.message_limits, id, maxlog)
+        logger.message_limits[id] = remaining - 1
+        remaining > 0 || return
+    end
     levelstr = string(level)
     color = level < Info  ? :blue :
             level < Warn  ? :cyan :
             level < Error ? :yellow : :red
-    print_with_color(color, logger.stream, first(levelstr), "- ", bold=true)
-    print(logger.stream, replace(message, '\n', "\n|  "))
-    println(logger.stream, " -", levelstr, ":", _module, ":", basename(filepath), ":", line)
-    for (key,val) in pairs(kwargs)
-        println(logger.stream, "|  ", key, " = ", val)
+    buf = IOBuffer()
+    print_with_color(color, buf, first(levelstr), "- ", bold=true)
+    msglines = split(string(message), '\n')
+    for i in 1:length(msglines)-1
+        println(buf, msglines[i])
+        print_with_color(color, buf, "|  ", bold=true)
     end
+    println(buf, msglines[end], " -", levelstr, ":", _module, ":", basename(filepath), ":", line)
+    for (key,val) in pairs(kwargs)
+        print_with_color(color, buf, "|  ", bold=true)
+        println(buf, key, " = ", val)
+    end
+    write(logger.stream, take!(buf))
+    nothing
 end
 
 end # CoreLogging
