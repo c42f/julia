@@ -475,6 +475,8 @@ min_enabled_level(logger::SimpleLogger) = logger.min_level
 
 function handle_message(logger::SimpleLogger, level, message, _module, group, id,
                         filepath, line; maxlog=nothing, kwargs...)
+    # TODO: Factor out more complex things here into a separate logger in
+    # stdlib: in particular maxlog support + colorization.
     if maxlog != nothing && maxlog isa Integer
         remaining = get!(logger.message_limits, id, maxlog)
         logger.message_limits[id] = remaining - 1
