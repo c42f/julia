@@ -308,6 +308,12 @@ This section lists changes that do not have deprecation warnings.
     `AbstractArray` types that specialized broadcasting using the old internal API will
     need to switch to the new API. ([#20740])
 
+  * The logging system has been redesigned - `info` and `warn` are deprecated
+    and are replaced with the logging macros `@info`, `@warn`, `@debug` and
+    `@error`.  The `logging` function is also deprecated and replaced with
+    `AbstractLogger` and the functions from the new standard `Logging` library.
+    ([#24490])
+
 Library improvements
 --------------------
 
