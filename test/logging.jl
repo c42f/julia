@@ -236,11 +236,11 @@ end
         io = IOBuffer()
         logger = SimpleLogger(io, Debug)
         handle_message(logger, level, message, _module, :group, :id,
-                                    filepath, line; kws...)
+                       filepath, line; kws...)
         s = String(take!(io))
         # Remove the small amount of color, as `Base.print_with_color` can't be
         # simply controlled.
-        s = replace(s, r"^\e\[1m\e\[..m(.*)\e\[39m\e\[22m", s"\1")
+        s = replace(s, r"^\e\[1m\e\[..m(.*)\e\[39m\e\[22m"m, s"\1")
         # println(s)
         s
     end
