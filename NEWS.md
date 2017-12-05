@@ -309,10 +309,16 @@ This section lists changes that do not have deprecation warnings.
     need to switch to the new API. ([#20740])
 
   * The logging system has been redesigned - `info` and `warn` are deprecated
-    and are replaced with the logging macros `@info`, `@warn`, `@debug` and
+    and replaced with the logging macros `@info`, `@warn`, `@debug` and
     `@error`.  The `logging` function is also deprecated and replaced with
     `AbstractLogger` and the functions from the new standard `Logging` library.
     ([#24490])
+
+  * The `RevString` type has been removed from the language; `reverse(::String)` returns
+    a `String` with code points (or fragments thereof) in reverse order. In general,
+    `reverse(s)` should return a string of the same type and encoding as `s` with code
+    points in reverse order; any string type overrides `reverse` to return a different
+    type of string must also override `reverseind` to compute reversed indices correctly.
 
 Library improvements
 --------------------
@@ -414,6 +420,15 @@ Library improvements
 
   * The `keys` of an `Associative` are now an `AbstractSet`. `Base.KeyIterator{<:Associative}`
     has been changed to `KeySet{K, <:Associative{K}} <: AbstractSet{K}` ([#24580]).
+
+  * New function `ncodeunits(s::AbstractString)` gives the number of code units in a string.
+    The generic definition is constant time but calls `endof(s)` which may be inefficient.
+    Therefore custom string types may want to define direct `ncodeunits` methods.
+
+  * `reverseind(s::AbstractString, i::Integer)` now has an efficient generic fallback, so
+    custom string types do not need to provide their own efficient defintions. The generic
+    definition relies on `ncodeunits` however, so for optimal performance you may need to
+    define a custom method for that function.
 
 Compiler/Runtime improvements
 -----------------------------
