@@ -48,11 +48,11 @@ function choosetests(choices = [])
         "replutil", "sets", "goto", "llvmcall", "llvmcall2", "grisu",
         "nullable", "meta", "stacktraces", "libgit2", "docs",
         "markdown", "serialize", "misc", "threads",
-        "enums", "cmdlineargs", "i18n", "workspace", "libdl", "int",
+        "enums", "cmdlineargs", "i18n", "libdl", "int",
         "checked", "bitset", "floatfuncs", "compile", "distributed", "inline",
         "boundscheck", "error", "ambiguous", "cartesian", "asmvariant", "osutils",
         "channels", "iostream", "specificity", "codegen", "codevalidation",
-        "reinterpretarray", "syntax", "logging"
+        "reinterpretarray", "syntax", "logging", "missing"
     ]
 
     if isdir(joinpath(JULIA_HOME, Base.DOCDIR, "examples"))
@@ -82,7 +82,7 @@ function choosetests(choices = [])
     end
 
 
-    unicodetests = ["unicode/UnicodeError", "unicode/utf8proc", "unicode/utf8"]
+    unicodetests = ["unicode/UnicodeError", "unicode/utf8"]
     if "unicode" in skip_tests
         filter!(x -> (x != "unicode" && !(x in unicodetests)), tests)
     elseif "unicode" in tests
@@ -126,7 +126,7 @@ function choosetests(choices = [])
                    "linalg/cholesky", "linalg/lu", "linalg/symmetric",
                    "linalg/generic", "linalg/uniformscaling", "linalg/lq",
                    "linalg/hessenberg", "linalg/rowvector", "linalg/conjarray",
-                   "linalg/blas"]
+                   "linalg/blas", "linalg/adjtrans"]
 
     if "linalg" in skip_tests
         filter!(x -> (x != "linalg" && !(x in linalgtests)), tests)

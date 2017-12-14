@@ -31,6 +31,10 @@ New language features
     `@generated` and normal implementations of part of a function. Surrounding code
     will be common to both versions ([#23168]).
 
+  * The `missing` singleton object (of type `Missing`) has been added to represent
+    missing values ([#24653]). It propagates through standard operators and mathematical functions,
+    and implements three-valued logic, similar to SQLs `NULL` and R's `NA`.
+
 Language changes
 ----------------
 
@@ -355,6 +359,8 @@ Library improvements
   * The function `randn` now accepts complex arguments (`Complex{T <: AbstractFloat}`)
     ([#21973]).
 
+  * `parse(Complex{T}, string)` can parse complex numbers in common formats ([#24713]).
+
   * The function `rand` can now pick up random elements from strings, associatives
     and sets ([#22228], [#21960], [#18155], [#22224]).
 
@@ -438,6 +444,13 @@ Compiler/Runtime improvements
     are inlined unless their estimated runtime cost substantially
     exceeds the cost of setting up and issuing a subroutine
     call. ([#22210], [#22732])
+
+  * Inference recursion-detection heuristics are now more precise,
+    allowing them to be triggered less often, but being more agressive when they
+    are triggered to drive the inference computation to a solution ([#23912]).
+
+  * Inference now propagates constants inter-procedurally, and can compute
+    various constants expressions at compile-time ([#24362]).
 
 Deprecated or removed
 ---------------------
@@ -725,8 +738,28 @@ Deprecated or removed
   * `trues(A::AbstractArray)` and `falses(A::AbstractArray)` are deprecated in favor of
     `trues(size(A))` and `falses(size(A))` respectively ([#24595]).
 
+  * `workspace` is discontinued, check out [Revise.jl](https://github.com/timholy/Revise.jl)
+    for an alternative workflow ([#25046]).
+
   * `cumsum`, `cumprod`, `accumulate`, and their mutating versions now require a `dim`
     argument instead of defaulting to using the first dimension ([#24684]).
+
+  * The `sum_kbn` and `cumsum_kbn` functions have been moved to the
+    [KahanSummation](https://github.com/JuliaMath/KahanSummation.jl) package ([#24869]).
+
+  * Unicode-related string functions have been moved to the new `Unicode` standard
+    library module ([#25021]). This applies to `normalize_string`, `graphemes`,
+    `is_assigned_char`, `textwidth`, `isascii`, `islower`, `isupper`, `isalpha`,
+    `isdigit`, `isxdigit`, `isnumber`, `isalnum`, `iscntrl`, `ispunct`, `isspace`,
+    `isprint`, `isgraph`, `lowercase`, `uppercase`, `titlecase`, `lcfirst` and `ucfirst`.
+
+  * `isnumber` has been deprecated in favor of `isnumeric`, `is_assigned_char`
+    in favor of `isassigned` and `normalize_string` in favor of `normalize`, all three
+    in the new `Unicode` standard library module ([#25021]).
+
+  * The aliases `Complex32`, `Complex64` and `Complex128` have been deprecated in favor of `ComplexF16`,
+     `ComplexF32` and `ComplexF64` respectively (#24647).
+
 
 Command-line option changes
 ---------------------------
@@ -1699,3 +1732,6 @@ Command-line option changes
 [#24320]: https://github.com/JuliaLang/julia/issues/24320
 [#24396]: https://github.com/JuliaLang/julia/issues/24396
 [#24413]: https://github.com/JuliaLang/julia/issues/24413
+[#24653]: https://github.com/JuliaLang/julia/issues/24653
+[#24869]: https://github.com/JuliaLang/julia/issues/24869
+[#25021]: https://github.com/JuliaLang/julia/issues/25021

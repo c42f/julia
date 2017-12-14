@@ -91,7 +91,7 @@ function available()
     for (pkg, vers) in all_avail
         any(x->Types.satisfies("julia", VERSION, x[2].requires), vers) && push!(avail, pkg)
     end
-    sort!(avail, by=lowercase)
+    sort!(avail, by=Base.Unicode.lowercase)
 end
 
 function available(pkg::AbstractString)
@@ -476,8 +476,10 @@ function resolve(
     have  :: Dict = Read.free(instd),
     upkgs :: Set{String} = Set{String}()
 )
-    orig_reqs = reqs
-    reqs, bktrc = Query.requirements(reqs, fixed, avail)
+    bktrc = Query.init_resolve_backtrace(reqs, fixed)
+    orig_reqs = deepcopy(reqs)
+    Query.check_fixed(reqs, fixed, avail)
+    Query.propagate_fixed!(reqs, bktrc, fixed)
     deps, conflicts = Query.dependencies(avail, fixed)
 
     for pkg in keys(reqs)

@@ -147,7 +147,7 @@ randsubseq(A::AbstractArray, p::Real) = randsubseq(GLOBAL_RNG, A, p)
 @inline function rand_lt(r::AbstractRNG, n::Int, mask::Int=nextpow2(n)-1)
     # this duplicates the functionality of rand(1:n), to optimize this special case
     while true
-        x = (rand_ui52_raw(r) % Int) & mask
+        x = rand(r, UInt52Raw(Int)) & mask
         x < n && return x
     end
 end
@@ -436,7 +436,7 @@ Base.convert(::Type{UInt128}, u::UUID) = u.value
 
 let groupings = [1:8; 10:13; 15:18; 20:23; 25:36]
     function Base.convert(::Type{UUID}, s::AbstractString)
-        s = lowercase(s)
+        s = Base.Unicode.lowercase(s)
 
         if !ismatch(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$", s)
             throw(ArgumentError("Malformed UUID string"))

@@ -1,6 +1,7 @@
 # This file is a part of Julia. License is MIT: https://julialang.org/license
 
 using Test
+using Base.LinAlg: mul!, Adjoint, Transpose
 import Base.LinAlg: BlasReal, BlasFloat
 
 n = 10 #Size of test matrix
@@ -159,7 +160,7 @@ srand(1)
                     b += im*convert(Matrix{elty}, rand(1:10, n, 2))
                 end
             end
-            condT = cond(map(Complex128,Tfull))
+            condT = cond(map(ComplexF64,Tfull))
             promty = typeof((zero(relty)*zero(relty) + zero(relty)*zero(relty))/one(relty))
             if relty != BigFloat
                 x = T.'\c.'
@@ -182,8 +183,8 @@ srand(1)
             @test_throws DimensionMismatch T \ RowVector(ones(elty,n+1))
             @test_throws DimensionMismatch T.' \ RowVector(ones(elty,n+1))
             @test_throws DimensionMismatch T' \ RowVector(ones(elty,n+1))
-            @test_throws DimensionMismatch Base.LinAlg.At_ldiv_B(T, RowVector(ones(elty,n+1)))
-            @test_throws DimensionMismatch Base.LinAlg.Ac_ldiv_B(T, RowVector(ones(elty,n+1)))
+            @test_throws DimensionMismatch Transpose(T) \ RowVector(ones(elty,n+1))
+            @test_throws DimensionMismatch Adjoint(T) \ RowVector(ones(elty,n+1))
             let bb = b, cc = c
                 for atype in ("Array", "SubArray")
                     if atype == "Array"
@@ -236,7 +237,7 @@ srand(1)
         @testset "Eigensystems" begin
             if relty <: AbstractFloat
                 d1, v1 = eig(T)
-                d2, v2 = eig(map(elty<:Complex ? Complex128 : Float64,Tfull))
+                d2, v2 = eig(map(elty<:Complex ? ComplexF64 : Float64,Tfull))
                 @test (uplo == :U ? d1 : reverse(d1)) ≈ d2
                 if elty <: Real
                     Test.test_approx_eq_modphase(v1, uplo == :U ? v2 : v2[:,n:-1:1])
@@ -275,10 +276,10 @@ srand(1)
                     @test Array(op(T, T2)) ≈ op(Tfull, Tfull2)
                 end
             end
-            # test pass-through of A_mul_B! for SymTridiagonal*Bidiagonal
+            # test pass-through of mul! for SymTridiagonal*Bidiagonal
             TriSym = SymTridiagonal(T.dv, T.ev)
             @test Array(TriSym*T) ≈ Array(TriSym)*Array(T)
-            # test pass-through of A_mul_B! for AbstractTriangular*Bidiagonal
+            # test pass-through of mul! for AbstractTriangular*Bidiagonal
             Tri = UpperTriangular(diagm(1 => T.ev))
             @test Array(Tri*T) ≈ Array(Tri)*Array(T)
         end
@@ -363,4 +364,13 @@ import Base.LinAlg: fillslots!, UnitLowerTriangular
             end
         end
     end
+end
+
+@testset "pathological promotion (#24707)" begin
+    @test promote_type(Matrix{Int}, Bidiagonal{Tuple{S}} where S<:Integer) <: Matrix
+    @test promote_type(Matrix{Tuple{T}} where T<:Integer, Bidiagonal{Tuple{S}} where S<:Integer) <: Matrix
+    @test promote_type(Matrix{Tuple{T}} where T<:Integer, Bidiagonal{Int}) <: Matrix
+    @test promote_type(Tridiagonal{Int}, Bidiagonal{Tuple{S}} where S<:Integer) <: Tridiagonal
+    @test promote_type(Tridiagonal{Tuple{T}} where T<:Integer, Bidiagonal{Tuple{S}} where S<:Integer) <: Tridiagonal
+    @test promote_type(Tridiagonal{Tuple{T}} where T<:Integer, Bidiagonal{Int}) <: Tridiagonal
 end

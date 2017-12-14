@@ -463,8 +463,8 @@ end
 @testset "find with general iterables" begin
     s = "julia"
     @test find(c -> c == 'l', s) == [3]
-    g = graphemes("日本語")
-    @test find(isascii, g) == Int[]
+    g = Base.Unicode.graphemes("日本語")
+    @test find(Base.Unicode.isascii, g) == Int[]
     @test find(!iszero, (i % 2 for i in 1:10)) == collect(1:2:9)
 end
 @testset "findn" begin
@@ -865,29 +865,6 @@ end
         @test c[1,2] == A[1,1]+A[1,3]
         @test c[2,2] == A[3,1]+A[3,3]
     end
-
-    v   = [1,1e100,1,-1e100]*1000
-    v2  = [1,-1e100,1,1e100]*1000
-
-    cv  = [1,1e100,1e100,2]*1000
-    cv2 = [1,-1e100,-1e100,2]*1000
-
-    @test isequal(cumsum_kbn(v), cv)
-    @test isequal(cumsum_kbn(v2), cv2)
-
-    A = [v reverse(v) v2 reverse(v2)]
-
-    c = cumsum_kbn(A, 1)
-
-    @test isequal(c[:,1], cv)
-    @test isequal(c[:,3], cv2)
-    @test isequal(c[4,:], [2.0, 2.0, 2.0, 2.0]*1000)
-
-    c = cumsum_kbn(A, 2)
-
-    @test isequal(c[1,:], cv2)
-    @test isequal(c[3,:], cv)
-    @test isequal(c[:,4], [2.0,2.0,2.0,2.0]*1000)
 
     @test repeat(BitMatrix(Matrix(I, 2, 2)), inner = (2,1), outer = (1,2)) ==
             repeat(Matrix(I, 2, 2), inner = (2,1), outer = (1,2))
@@ -2236,3 +2213,7 @@ end
 #     @test_throws ArgumentError zeros(2)[false]
 #     @test_throws ArgumentError zeros(2)[true]
 # end
+
+@testset "issue 24707" begin
+    @test eltype(Vector{Tuple{V}} where V<:Integer) >: Tuple{Integer}
+end

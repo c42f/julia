@@ -229,6 +229,7 @@ include("parse.jl")
 include("shell.jl")
 include("regex.jl")
 include("show.jl")
+include("arrayshow.jl")
 
 # Logging
 include("logging.jl")
@@ -403,6 +404,9 @@ const × = cross
 # statistics
 include("statistics.jl")
 
+# missing values
+include("missing.jl")
+
 # libgit2 support
 include("libgit2/libgit2.jl")
 
@@ -487,6 +491,7 @@ Base.require(:Profile)
 Base.require(:SharedArrays)
 Base.require(:SuiteSparse)
 Base.require(:Test)
+Base.require(:Unicode)
 
 @eval Base begin
     @deprecate_binding Test root_module(:Test) true ", run `using Test` instead"

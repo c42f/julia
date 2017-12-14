@@ -1,5 +1,26 @@
 # This file is a part of Julia. License is MIT: https://julialang.org/license
 
+# shims to maintain existence of names in Base module in A_mul_B deprecation process
+function Ac_ldiv_Bt end
+function At_ldiv_Bt end
+function A_ldiv_Bt end
+function At_ldiv_B end
+function Ac_ldiv_Bc end
+function A_ldiv_Bc end
+function Ac_ldiv_B end
+function At_rdiv_Bt end
+function A_rdiv_Bt end
+function At_rdiv_B end
+function Ac_rdiv_Bc end
+function A_rdiv_Bc end
+function Ac_rdiv_B end
+function At_mul_Bt end
+function A_mul_Bt end
+function At_mul_B end
+function Ac_mul_Bc end
+function A_mul_Bc end
+function Ac_mul_B end
+
 """
 Linear algebra module. Provides array arithmetic,
 matrix factorizations and other linear algebra related
@@ -179,9 +200,9 @@ export
 # Constants
     I
 
-const BlasFloat = Union{Float64,Float32,Complex128,Complex64}
+const BlasFloat = Union{Float64,Float32,ComplexF64,ComplexF32}
 const BlasReal = Union{Float64,Float32}
-const BlasComplex = Union{Complex128,Complex64}
+const BlasComplex = Union{ComplexF64,ComplexF32}
 
 if USE_BLAS64
     const BlasInt = Int64
@@ -237,9 +258,21 @@ function char_uplo(uplo::Symbol)
     end
 end
 
+# shims to maintain existence of names in LinAlg module in A_mul_B deprecation process
+function A_mul_B! end
+function Ac_mul_B! end
+function Ac_mul_B! end
+function At_mul_B! end
+function A_ldiv_B! end
+function At_ldiv_B! end
+function Ac_ldiv_B! end
+function A_rdiv_B! end
+function A_rdiv_Bc! end
+
 copy_oftype(A::AbstractArray{T}, ::Type{T}) where {T} = copy(A)
 copy_oftype(A::AbstractArray{T,N}, ::Type{S}) where {T,N,S} = convert(AbstractArray{S,N}, A)
 
+include("adjtrans.jl")
 include("conjarray.jl")
 include("transpose.jl")
 include("rowvector.jl")
