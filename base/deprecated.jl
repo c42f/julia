@@ -1271,6 +1271,40 @@ export conv, conv2, deconv, filt, filt!, xcorr
 @deprecate_moved watch_file "FileWatching" true true
 @deprecate_moved FileMonitor "FileWatching" true true
 
+@eval @deprecate_moved $(Symbol("@spawn")) "Distributed" true true
+@eval @deprecate_moved $(Symbol("@spawnat")) "Distributed" true true
+@eval @deprecate_moved $(Symbol("@fetch")) "Distributed" true true
+@eval @deprecate_moved $(Symbol("@fetchfrom")) "Distributed" true true
+@eval @deprecate_moved $(Symbol("@everywhere")) "Distributed" true true
+@eval @deprecate_moved $(Symbol("@parallel")) "Distributed" true true
+
+@deprecate_moved addprocs "Distributed" true true
+@deprecate_moved CachingPool "Distributed" true true
+@deprecate_moved clear! "Distributed" true true
+@deprecate_moved ClusterManager "Distributed" true true
+@deprecate_moved default_worker_pool "Distributed" true true
+@deprecate_moved init_worker "Distributed" true true
+@deprecate_moved interrupt "Distributed" true true
+@deprecate_moved launch "Distributed" true true
+@deprecate_moved manage "Distributed" true true
+@deprecate_moved nworkers "Distributed" true true
+@deprecate_moved pmap "Distributed" true true
+@deprecate_moved procs "Distributed" true true
+@deprecate_moved remote "Distributed" true true
+@deprecate_moved remotecall "Distributed" true true
+@deprecate_moved remotecall_fetch "Distributed" true true
+@deprecate_moved remotecall_wait "Distributed" true true
+@deprecate_moved remote_do "Distributed" true true
+@deprecate_moved rmprocs "Distributed" true true
+@deprecate_moved workers "Distributed" true true
+@deprecate_moved WorkerPool "Distributed" true true
+@deprecate_moved RemoteChannel "Distributed" true true
+@deprecate_moved Future "Distributed" true true
+@deprecate_moved WorkerConfig "Distributed" true true
+@deprecate_moved RemoteException "Distributed" true true
+@deprecate_moved ProcessExitedException "Distributed" true true
+
+
 @deprecate_moved crc32c "CRC32c" true true
 
 @deprecate_moved DateTime "Dates" true true
@@ -1531,7 +1565,7 @@ export hex2num
 # remove code for `importall` in src/
 
 # issue #17886
-# deprecations for filter[!] with 2-arg functions are in associative.jl
+# deprecations for filter[!] with 2-arg functions are in abstractdict.jl
 
 # PR #23066
 @deprecate cfunction(f, r, a::Tuple) cfunction(f, r, Tuple{a...})
@@ -1611,7 +1645,7 @@ import .Iterators.enumerate
 @deprecate_binding Range AbstractRange
 
 # issue #5794
-@deprecate map(f, d::T) where {T<:Associative}  T( f(p) for p in pairs(d) )
+@deprecate map(f, d::T) where {T<:AbstractDict}  T( f(p) for p in pairs(d) )
 
 # issue #17086
 @deprecate isleaftype isconcrete
@@ -3148,8 +3182,8 @@ info(err::Exception; prefix="ERROR: ", kw...) =
     info(STDERR, err, prefix=prefix; kw...)
 
 # issue #24019
-@deprecate similar(a::Associative) empty(a)
-@deprecate similar(a::Associative, ::Type{Pair{K,V}}) where {K, V} empty(a, K, V)
+@deprecate similar(a::AbstractDict) empty(a)
+@deprecate similar(a::AbstractDict, ::Type{Pair{K,V}}) where {K, V} empty(a, K, V)
 
 # PR #24594
 @eval LibGit2 begin
@@ -3188,6 +3222,13 @@ end
 @deprecate_binding Complex32  ComplexF16
 @deprecate_binding Complex64  ComplexF32
 @deprecate_binding Complex128 ComplexF64
+
+# PR #24999
+@deprecate ind2chr(s::AbstractString, i::Integer) length(s, 1, i)
+@deprecate chr2ind(s::AbstractString, n::Integer) nextind(s, 0, n)
+
+# Associative -> AbstractDict (#25012)
+@deprecate_binding Associative AbstractDict
 
 # END 0.7 deprecations
 

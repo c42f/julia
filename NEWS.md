@@ -436,6 +436,12 @@ Library improvements
     definition relies on `ncodeunits` however, so for optimal performance you may need to
     define a custom method for that function.
 
+  * `permutedims(m::AbstractMatrix)` is now short for `permutedims(m, (2,1))`, and is now a
+    more convenient way of making a "shallow transpose" of a 2D array. This is the
+    recommended approach for manipulating arrays of data, rather than the recursively
+    defined, linear-algebra function `transpose`. Similarly,
+    `permutedims(v::AbstractVector)` will create a row matrix ([#24839]).
+
 Compiler/Runtime improvements
 -----------------------------
 
@@ -760,6 +766,7 @@ Deprecated or removed
   * The aliases `Complex32`, `Complex64` and `Complex128` have been deprecated in favor of `ComplexF16`,
      `ComplexF32` and `ComplexF64` respectively (#24647).
 
+  * `Associative` has been deprecated in favor of `AbstractDict` ([#25012]).
 
 Command-line option changes
 ---------------------------

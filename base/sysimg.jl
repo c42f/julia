@@ -147,7 +147,7 @@ Matrix(::Uninitialized, m::Integer, n::Integer) = Matrix{Any}(uninitialized, Int
 Vector() = Vector{Any}(uninitialized, 0)
 
 
-include("associative.jl")
+include("abstractdict.jl")
 
 include("namedtuple.jl")
 
@@ -419,9 +419,6 @@ using .SparseArrays
 
 include("asyncmap.jl")
 
-include("distributed/Distributed.jl")
-using .Distributed
-
 # worker threads
 include("threadcall.jl")
 
@@ -465,7 +462,6 @@ function __init__()
     Multimedia.reinit_displays() # since Multimedia.displays uses STDOUT as fallback
     early_init()
     init_load_path()
-    Distributed.init_parallel()
     init_threadcall()
 end
 
@@ -492,12 +488,14 @@ Base.require(:SharedArrays)
 Base.require(:SuiteSparse)
 Base.require(:Test)
 Base.require(:Unicode)
+Base.require(:Distributed)
 
 @eval Base begin
     @deprecate_binding Test root_module(:Test) true ", run `using Test` instead"
     @deprecate_binding Mmap root_module(:Mmap) true ", run `using Mmap` instead"
     @deprecate_binding Profile root_module(:Profile) true ", run `using Profile` instead"
     @deprecate_binding Dates root_module(:Dates) true ", run `using Dates` instead"
+#    @deprecate_binding Distributed root_module(:Distributed) true ", run `using Distributed` instead"
 end
 
 empty!(LOAD_PATH)

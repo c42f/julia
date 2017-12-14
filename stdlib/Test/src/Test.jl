@@ -1400,8 +1400,11 @@ with string types besides the standard `String` type.
 struct GenericString <: AbstractString
     string::AbstractString
 end
-Base.endof(s::GenericString) = endof(s.string)
-Base.next(s::GenericString, i::Int) = next(s.string, i)
+Base.ncodeunits(s::GenericString) = ncodeunits(s.string)
+Base.codeunit(s::GenericString) = codeunit(s.string)
+Base.codeunit(s::GenericString, i::Integer) = codeunit(s.string, i)
+Base.isvalid(s::GenericString, i::Integer) = isvalid(s.string, i)
+Base.next(s::GenericString, i::Integer) = next(s.string, i)
 Base.reverse(s::GenericString) = GenericString(reverse(s.string))
 Base.reverse(s::SubString{GenericString}) =
     GenericString(typeof(s.string)(reverse(String(s))))
@@ -1417,15 +1420,15 @@ end
 
 """
 The `GenericDict` can be used to test generic dict APIs that program to
-the `Associative` interface, in order to ensure that functions can work
+the `AbstractDict` interface, in order to ensure that functions can work
 with associative types besides the standard `Dict` type.
 """
-struct GenericDict{K,V} <: Associative{K,V}
-    s::Associative{K,V}
+struct GenericDict{K,V} <: AbstractDict{K,V}
+    s::AbstractDict{K,V}
 end
 
 for (G, A) in ((GenericSet, AbstractSet),
-               (GenericDict, Associative))
+               (GenericDict, AbstractDict))
     @eval begin
         Base.convert(::Type{$G}, s::$A) = $G(s)
         Base.done(s::$G, state) = done(s.s, state)

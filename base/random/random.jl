@@ -4,7 +4,8 @@ module Random
 
 using Base.dSFMT
 using Base.GMP: Limb, MPZ
-using Base: BitInteger, BitInteger_types, BitUnsigned
+using Base: BitInteger, BitInteger_types, BitUnsigned, @gc_preserve
+
 import Base: copymutable, copy, copy!, ==, hash
 
 export srand,
@@ -105,7 +106,7 @@ Sampler(rng::AbstractRNG, sp::Sampler, ::Repetition) =
 Sampler(rng::AbstractRNG, X) = Sampler(rng, X, Val(Inf))
 Sampler(rng::AbstractRNG, ::Type{X}) where {X} = Sampler(rng, X, Val(Inf))
 
-#### pre-defined useful Sampler subtypes
+#### pre-defined useful Sampler types
 
 # default fall-back for types
 struct SamplerType{T} <: Sampler end
@@ -136,6 +137,38 @@ struct SamplerTag{T,S} <: Sampler
     data::S
     SamplerTag{T}(s::S) where {T,S} = new{T,S}(s)
 end
+
+
+#### helper samplers
+
+##### Adapter to generate a randome value in [0, n]
+
+struct LessThan{T<:Integer,S} <: Sampler
+    sup::T
+    s::S    # the scalar specification/sampler to feed to rand
+end
+
+function rand(rng::AbstractRNG, sp::LessThan)
+    while true
+        x = rand(rng, sp.s)
+        x <= sp.sup && return x
+    end
+end
+
+struct Masked{T<:Integer,S} <: Sampler
+    mask::T
+    s::S
+end
+
+rand(rng::AbstractRNG, sp::Masked) = rand(rng, sp.s) & sp.mask
+
+##### Uniform
+
+struct UniformT{T} <: Sampler end
+
+uniform(::Type{T}) where {T} = UniformT{T}()
+
+rand(rng::AbstractRNG, ::UniformT{T}) where {T} = rand(rng, T)
 
 
 ### machinery for generation with Sampler
@@ -215,7 +248,7 @@ Pick a random element or array of random elements from the set of values specifi
 `S` can be
 
 * an indexable collection (for example `1:n` or `['x','y','z']`),
-* an `Associative` or `AbstractSet` object,
+* an `AbstractDict` or `AbstractSet` object,
 * a string (considered as a collection of characters), or
 * a type: the set of values to pick from is then equivalent to `typemin(S):typemax(S)` for
   integers (this is not applicable to [`BigInt`](@ref)), and to ``[0, 1)`` for floating
@@ -235,7 +268,7 @@ julia> rand(MersenneTwister(0), Dict(1=>2, 3=>4))
 ```
 
 !!! note
-    The complexity of `rand(rng, s::Union{Associative,AbstractSet})`
+    The complexity of `rand(rng, s::Union{AbstractDict,AbstractSet})`
     is linear in the length of `s`, unless an optimized method with
     constant complexity is available, which is the case for `Dict`,
     `Set` and `BitSet`. For more than a few calls, use `rand(rng,

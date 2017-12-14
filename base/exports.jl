@@ -17,7 +17,6 @@ export
     Markdown,
     Threads,
     Iterators,
-    Distributed,
     Broadcast,
 
 # Types
@@ -30,7 +29,7 @@ export
     AbstractVector,
     AbstractVecOrMat,
     Array,
-    Associative,
+    AbstractDict,
     Bidiagonal,
     BigFloat,
     BigInt,
@@ -154,7 +153,7 @@ export
     NullException,
     ParseError,
     SystemError,
-    UnicodeError,
+    StringIndexError,
 
 # Global constants and variables
     ARGS,
@@ -716,7 +715,6 @@ export
     bytes2hex,
     chomp,
     chop,
-    chr2ind,
     codeunit,
     dec,
     digits,
@@ -728,7 +726,6 @@ export
     hex,
     hex2bytes,
     hex2bytes!,
-    ind2chr,
     info,
     ismatch,
     isvalid,
@@ -868,6 +865,7 @@ export
 # missing values
     ismissing,
     missing,
+    skipmissing,
 
 # time
     sleep,
@@ -1249,38 +1247,7 @@ export
     nzrange,
     nnz,
 
-# Distributed module re-exports
-    @spawn,
-    @spawnat,
-    @fetch,
-    @fetchfrom,
-    @everywhere,
-    @parallel,
-
-    addprocs,
-    CachingPool,
-    clear!,
-    ClusterManager,
-    default_worker_pool,
-    init_worker,
-    interrupt,
-    launch,
-    manage,
+# Minimal set of Distributed exports - useful for a program to check if running
+# in distributed mode or not.
     myid,
-    nprocs,
-    nworkers,
-    pmap,
-    procs,
-    remote,
-    remotecall,
-    remotecall_fetch,
-    remotecall_wait,
-    remote_do,
-    rmprocs,
-    workers,
-    WorkerPool,
-    RemoteChannel,
-    Future,
-    WorkerConfig,
-    RemoteException,
-    ProcessExitedException
+    nprocs

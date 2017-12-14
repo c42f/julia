@@ -102,12 +102,13 @@ if sizeof(Int32) < sizeof(Int)
     local r = rand(Int32(-1):typemax(Int32))
     @test typeof(r) == Int32
     @test -1 <= r <= typemax(Int32)
-    @test all([div(0x00010000000000000000,k)*k - 1 == Base.Random.RangeGenerator(map(UInt64,1:k)).u for k in 13 .+ Int64(2).^(32:62)])
-    @test all([div(0x00010000000000000000,k)*k - 1 == Base.Random.RangeGenerator(map(Int64,1:k)).u for k in 13 .+ Int64(2).^(32:61)])
+    for U = (Int64, UInt64)
+        @test all(div(one(UInt128) << 52, k)*k - 1 == SamplerRangeInt(map(U, 1:k)).u
+                  for k in 13 .+ Int64(2).^(32:51))
+        @test all(div(one(UInt128) << 64, k)*k - 1 == SamplerRangeInt(map(U, 1:k)).u
+                  for k in 13 .+ Int64(2).^(52:62))
+    end
 
-    @test Base.Random._maxmultiple(0x000100000000) === 0xffffffffffffffff
-    @test Base.Random._maxmultiple(0x0000FFFFFFFF) === 0x00000000fffffffe
-    @test Base.Random._maxmultiple(0x000000000000) === 0xffffffffffffffff
 end
 
 # BigInt specific
@@ -224,8 +225,11 @@ guardsrand() do
     @test r == rand(map(UInt64, 97:122))
 end
 
-@test all([div(0x000100000000,k)*k - 1 == Base.Random.RangeGenerator(map(UInt64,1:k)).u for k in 13 .+ Int64(2).^(1:30)])
-@test all([div(0x000100000000,k)*k - 1 == Base.Random.RangeGenerator(map(Int64,1:k)).u for k in 13 .+ Int64(2).^(1:30)])
+for U in (Int64, UInt64)
+    @test all(div(one(UInt64) << 52, k)*k - 1 == SamplerRangeInt(map(U, 1:k)).u
+              for k in 13 .+ Int64(2).^(1:30))
+end
+
 
 import Base.Random: uuid1, uuid4, UUID, uuid_version
 
@@ -286,7 +290,8 @@ let mt = MersenneTwister(0)
     @test rand!(mt, AF64)[end] == 0.957735065345398
     @test rand!(mt, AF64)[end] == 0.6492481059865669
     resize!(AF64, 2*length(mt.vals))
-    @test Base.Random.rand_AbstractArray_Float64!(mt, AF64, linearindices(AF64), Base.Random.CloseOpen())[end]  == 0.432757268470779
+    @test invoke(rand!, Tuple{MersenneTwister,AbstractArray{Float64},Base.Random.SamplerTrivial{Base.Random.CloseOpen_64}},
+                 mt, AF64, Base.Random.SamplerTrivial(Base.Random.CloseOpen()))[end]  == 0.432757268470779
 end
 
 # Issue #9037
