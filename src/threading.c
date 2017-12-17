@@ -295,7 +295,7 @@ static void ti_init_master_thread(void)
     if (!DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
                          GetCurrentProcess(), &hMainThread, 0,
                          FALSE, DUPLICATE_SAME_ACCESS)) {
-        jl_printf(JL_STDERR, "WARNING: failed to access handle to main thread\n");
+        JL_WARN("Failed to access handle to main thread");
         hMainThread = INVALID_HANDLE_VALUE;
     }
 #endif

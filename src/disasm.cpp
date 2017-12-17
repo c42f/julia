@@ -399,14 +399,14 @@ jl_value_t *jl_dump_fptr_asm(uint64_t fptr, int raw_mc, const char* asm_variant)
     if (!jl_DI_for_fptr(fptr, &symsize, &slide, &section_slide, &object, &context)) {
         if (!jl_dylib_DI_for_fptr(fptr, &object, &context, &slide, &section_slide, false,
             NULL, NULL, NULL, NULL)) {
-                jl_printf(JL_STDERR, "WARNING: Unable to find function pointer\n");
+                JL_WARN("Unable to find function pointer");
                 return jl_pchar_to_string("", 0);
         }
     }
     if (symsize == 0 && object != NULL)
         symsize = compute_obj_symsize(object, fptr + slide + section_slide);
     if (symsize == 0) {
-        jl_printf(JL_STDERR, "WARNING: Could not determine size of symbol\n");
+        JL_WARN("Could not determine size of symbol");
         return jl_pchar_to_string("", 0);
     }
 
@@ -667,8 +667,7 @@ static void jl_dump_asm_internal(
         STI(TheTarget->createMCSubtargetInfo(TripleName, cpu, features));
     std::unique_ptr<MCDisassembler> DisAsm(TheTarget->createMCDisassembler(*STI, Ctx));
     if (!DisAsm) {
-        jl_printf(JL_STDERR, "ERROR: no disassembler for target %s\n",
-                  TripleName.c_str());
+        JL_ERROR("No disassembler for target %s", TripleName.c_str());
         return;
     }
     unsigned OutputAsmVariant = 0; // ATT or Intel-style assembly

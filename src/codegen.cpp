@@ -4141,7 +4141,7 @@ static Function *gen_cfun_wrapper(jl_function_t *ff, jl_value_t *jlrettype, jl_t
                 // occasionally required by the C API (typically error callbacks)
                 // and doesn't capture the majority of the case when a function
                 // may throw.
-                jl_printf(JL_STDERR, "WARNING: cfunction: return type of %s does not match\n", name);
+                JL_WARN("cfunction: return type of %s does not match", name);
             }
         }
     }
@@ -4878,7 +4878,7 @@ static std::unique_ptr<Module> emit_function(
             filename = jl_symbol_name((jl_sym_t*)jl_linenode_file(lno));
     }
     ctx.file = filename;
-    // jl_printf(JL_STDERR, "\n*** compiling %s at %s:%d\n\n",
+    // JL_DEBUG("Compiling %s at %s:%d\n\n",
     //           jl_symbol_name(ctx.name), filename.str().c_str(), toplineno);
 
     ctx.debug_enabled = true;

@@ -2048,7 +2048,7 @@ static void jl_reinit_item(jl_value_t *v, int how, arraylist_t *tracee_list)
                     if (jl_generating_output() && jl_options.incremental) {
                         jl_errorf("Cannot replace module %s during incremental precompile.", jl_symbol_name(mod->name));
                     }
-                    jl_printf(JL_STDERR, "WARNING: replacing module %s.\n", jl_symbol_name(mod->name));
+                    JL_WARN("Replacing module %s.", jl_symbol_name(mod->name));
                 }
                 b->value = v;
                 jl_gc_wb_binding(b, v);
@@ -2300,7 +2300,7 @@ JL_DLLEXPORT int jl_save_incremental(const char *fname, jl_array_t *worklist)
     ios_t f;
     jl_array_t *mod_array, *udeps = NULL;
     if (ios_mkstemp(&f, tmpfname) == NULL) {
-        jl_printf(JL_STDERR, "Cannot open cache file \"%s\" for writing.\n", tmpfname);
+        JL_WARN("Cannot open cache file \"%s\" for writing.", tmpfname);
         return 1;
     }
     JL_GC_PUSH2(&mod_array, &udeps);
@@ -2375,7 +2375,7 @@ JL_DLLEXPORT int jl_save_incremental(const char *fname, jl_array_t *worklist)
                 dep = jl_fieldref(deptuple, 1);  // file abspath
                 ios_t *srctp = ios_file(&srctext, jl_string_data(dep), 1, 0, 0, 0);
                 if (!srctp) {
-                    jl_printf(JL_STDERR, "WARNING: could not cache source text for \"%s\".\n",
+                    JL_WARN("Could not cache source text for \"%s\".",
                               jl_string_data(dep));
                     continue;
                 }
@@ -2397,7 +2397,7 @@ JL_DLLEXPORT int jl_save_incremental(const char *fname, jl_array_t *worklist)
 
     JL_GC_POP();
     if (jl_fs_rename(tmpfname, fname) < 0) {
-        jl_printf(JL_STDERR, "Cannot write cache file \"%s\".\n", fname);
+        JL_WARN("Cannot write cache file \"%s\".", fname);
         return 1;
     }
 

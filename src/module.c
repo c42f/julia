@@ -195,11 +195,10 @@ static jl_binding_t *jl_get_binding_(jl_module_t *m, jl_sym_t *var, modstack_t *
                 if (owner != NULL && tempb->owner != b->owner &&
                     !tempb->deprecated && !b->deprecated &&
                     !(tempb->constp && tempb->value && b->constp && b->value == tempb->value)) {
-                    jl_printf(JL_STDERR,
-                              "WARNING: both %s and %s export \"%s\"; uses of it in module %s must be qualified\n",
-                              jl_symbol_name(owner->name),
-                              jl_symbol_name(imp->name), jl_symbol_name(var),
-                              jl_symbol_name(m->name));
+                    JL_WARN("Both %s and %s export \"%s\"; uses of it in module %s must be qualified",
+                            jl_symbol_name(owner->name),
+                            jl_symbol_name(imp->name), jl_symbol_name(var),
+                            jl_symbol_name(m->name));
                     // mark this binding resolved, to avoid repeating the warning
                     (void)jl_get_binding_wr(m, var, 0);
                     return NULL;
@@ -277,10 +276,9 @@ static void module_import_(jl_module_t *to, jl_module_t *from, jl_sym_t *s,
         return;
     jl_binding_t *b = jl_get_binding(from, s);
     if (b == NULL) {
-        jl_printf(JL_STDERR,
-                  "WARNING: could not import %s.%s into %s\n",
-                  jl_symbol_name(from->name), jl_symbol_name(s),
-                  jl_symbol_name(to->name));
+        JL_WARN("Could not import %s.%s into %s",
+                jl_symbol_name(from->name), jl_symbol_name(s),
+                jl_symbol_name(to->name));
     }
     else {
         if (b->deprecated) {
@@ -292,10 +290,9 @@ static void module_import_(jl_module_t *to, jl_module_t *from, jl_sym_t *s,
                 /* with #22763, external packages wanting to replace
                    deprecated Base bindings should simply export the new
                    binding */
-                jl_printf(JL_STDERR,
-                          "WARNING: importing deprecated binding %s.%s into %s.\n",
-                          jl_symbol_name(from->name), jl_symbol_name(s),
-                          jl_symbol_name(to->name));
+                JL_WARN("Importing deprecated binding %s.%s into %s.",
+                        jl_symbol_name(from->name), jl_symbol_name(s),
+                        jl_symbol_name(to->name));
             }
         }
 
@@ -317,10 +314,9 @@ static void module_import_(jl_module_t *to, jl_module_t *from, jl_sym_t *s,
                     bto->imported = (explici!=0);
                     return;
                 }
-                jl_printf(JL_STDERR,
-                          "WARNING: ignoring conflicting import of %s.%s into %s\n",
-                          jl_symbol_name(from->name), jl_symbol_name(s),
-                          jl_symbol_name(to->name));
+                JL_WARN("Ignoring conflicting import of %s.%s into %s",
+                        jl_symbol_name(from->name), jl_symbol_name(s),
+                        jl_symbol_name(to->name));
             }
             else if (bto->constp || bto->value) {
                 // conflict with name owned by destination module
@@ -329,10 +325,9 @@ static void module_import_(jl_module_t *to, jl_module_t *from, jl_sym_t *s,
                     // equivalent binding
                     return;
                 }
-                jl_printf(JL_STDERR,
-                          "WARNING: import of %s.%s into %s conflicts with an existing identifier; ignored.\n",
-                          jl_symbol_name(from->name), jl_symbol_name(s),
-                          jl_symbol_name(to->name));
+                JL_WARN("Import of %s.%s into %s conflicts with an existing identifier; ignored.",
+                        jl_symbol_name(from->name), jl_symbol_name(s),
+                        jl_symbol_name(to->name));
             }
             else {
                 bto->owner = b->owner;
@@ -396,10 +391,9 @@ JL_DLLEXPORT void jl_module_using(jl_module_t *to, jl_module_t *from)
                     // see issue #4715
                     var != to->name &&
                     !eq_bindings(jl_get_binding(to,var), b)) {
-                    jl_printf(JL_STDERR,
-                              "WARNING: using %s.%s in module %s conflicts with an existing identifier.\n",
-                              jl_symbol_name(from->name), jl_symbol_name(var),
-                              jl_symbol_name(to->name));
+                    JL_WARN("Using %s.%s in module %s conflicts with an existing identifier.",
+                            jl_symbol_name(from->name), jl_symbol_name(var),
+                            jl_symbol_name(to->name));
                 }
             }
         }
@@ -571,8 +565,7 @@ JL_DLLEXPORT void jl_checked_assignment(jl_binding_t *b, jl_value_t *rhs)
                 jl_errorf("invalid redefinition of constant %s",
                           jl_symbol_name(b->name));
             }
-            jl_printf(JL_STDERR, "WARNING: redefining constant %s\n",
-                      jl_symbol_name(b->name));
+            JL_WARN("Redefining constant %s", jl_symbol_name(b->name));
         }
     }
     b->value = rhs;

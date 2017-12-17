@@ -449,7 +449,7 @@ void JuliaOJIT::DebugObjectRegistrar::NotifyGDB(OwningBinary<object::ObjectFile>
     jit_code_entry *JITCodeEntry = new jit_code_entry();
 
     if (!JITCodeEntry) {
-        jl_printf(JL_STDERR, "WARNING: Allocation failed when registering a JIT entry!\n");
+        JL_WARN("Allocation failed when registering a JIT entry!");
     }
     else {
         JITCodeEntry->symfile_addr = Buffer;

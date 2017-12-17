@@ -781,8 +781,10 @@ static jl_cgval_t emit_cglobal(jl_codectx_t &ctx, jl_value_t **args, size_t narg
     }
     else if (sym.fptr != NULL) {
         res = ConstantInt::get(lrt, (uint64_t)sym.fptr);
-        if (imaging_mode)
-            jl_printf(JL_STDERR,"WARNING: literal address used in cglobal for %s; code cannot be statically compiled\n", sym.f_name);
+        if (imaging_mode) {
+            JL_WARN("Literal address used in cglobal for %s; "
+                    "code cannot be statically compiled", sym.f_name);
+        }
     }
     else {
         if (imaging_mode) {
@@ -1995,8 +1997,10 @@ jl_cgval_t function_sig_t::emit_a_ccall(
     else if (symarg.fptr != NULL) {
         Type *funcptype = PointerType::get(functype, 0);
         llvmf = literal_static_pointer_val(ctx, (void*)(uintptr_t)symarg.fptr, funcptype);
-        if (imaging_mode)
-            jl_printf(JL_STDERR,"WARNING: literal address used in ccall for %s; code cannot be statically compiled\n", symarg.f_name);
+        if (imaging_mode) {
+            JL_WARN("Literal address used in ccall for %s; "
+                    "code cannot be statically compiled", symarg.f_name);
+        }
     }
     else {
         assert(symarg.f_name != NULL);
