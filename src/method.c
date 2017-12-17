@@ -427,9 +427,8 @@ static void jl_method_set_source(jl_method_t *m, jl_code_info_t *src)
                                 jl_error("@nospecialize annotation applied to a non-argument");
                             }
                             else if (sn >= sizeof(m->nospecialize) * 8) {
-                                jl_printf(JL_STDERR,
-                                          "WARNING: @nospecialize annotation only supported on the first %d arguments.\n",
-                                          (int)(sizeof(m->nospecialize) * 8));
+                                JL_WARN("@nospecialize annotation only supported on the first %d arguments",
+                                        (int)(sizeof(m->nospecialize) * 8));
                             }
                             else {
                                 m->nospecialize |= (1 << sn);

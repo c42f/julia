@@ -34,12 +34,12 @@ void jl_write_compiler_output(void)
         jl_precompile(jl_options.compile_enabled == JL_OPTIONS_COMPILE_ALL);
 
     if (!jl_module_init_order) {
-        jl_printf(JL_STDERR, "WARNING: --output requested, but no modules defined during run\n");
+        JL_WARN("--output requested, but no modules defined during run");
         return;
     }
 
     if (jl_options.outputjitbc) {
-        jl_printf(JL_STDERR, "WARNING: --output-jit-bc is meaningless with options for dumping sysimage data\n");
+        JL_WARN("--output-jit-bc is meaningless with options for dumping sysimage data");
     }
 
     jl_array_t *worklist = jl_module_init_order;
@@ -58,9 +58,9 @@ void jl_write_compiler_output(void)
             if (jl_save_incremental(jl_options.outputji, worklist))
                 jl_exit(1);
         if (jl_options.outputbc || jl_options.outputunoptbc)
-            jl_printf(JL_STDERR, "WARNING: incremental output to a .bc file is not implemented\n");
+            JL_WARN("Incremental output to a .bc file is not implemented");
         if (jl_options.outputo)
-            jl_printf(JL_STDERR, "WARNING: incremental output to a .o file is not implemented\n");
+            JL_WARN("Incremental output to a .o file is not implemented");
     }
     else {
         ios_t *s = NULL;
@@ -225,13 +225,12 @@ static void _compile_all_union(jl_value_t *sig)
 static void _compile_all_deq(jl_array_t *found)
 {
     int found_i, found_l = jl_array_len(found);
-    jl_printf(JL_STDERR, "found %d uncompiled methods for compile-all\n", (int)found_l);
+    JL_INFO("Found %d uncompiled methods for compile-all", (int)found_l);
     jl_method_instance_t *linfo = NULL;
     jl_value_t *src = NULL;
     JL_GC_PUSH2(&linfo, &src);
     for (found_i = 0; found_i < found_l; found_i++) {
-        if (found_i % (1 + found_l / 300) == 0 || found_i == found_l - 1) // show 300 progress steps, to show progress without overwhelming log files
-            jl_printf(JL_STDERR, " %d / %d\r", found_i + 1, found_l);
+        JL_PROGRESS(JL_LOGLEVEL_INFO, "compile-all", (found_i + 1)/found_l);
         jl_typemap_entry_t *ml = (jl_typemap_entry_t*)jl_array_ptr_ref(found, found_i);
         jl_method_t *m = ml->func.method;
         if (m->source == NULL)  // TODO: generic implementations of generated functions
@@ -261,7 +260,6 @@ static void _compile_all_deq(jl_array_t *found)
         assert(linfo->functionObjectsDecls.functionObject != NULL);
     }
     JL_GC_POP();
-    jl_printf(JL_STDERR, "\n");
 }
 
 static int compile_all_enq__(jl_typemap_entry_t *ml, void *env)

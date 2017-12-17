@@ -1058,8 +1058,7 @@ static void jl_reinit_item(jl_value_t *v, int how, arraylist_t *tracee_list)
                     if (jl_generating_output() && jl_options.incremental) {
                         jl_errorf("Cannot replace module %s during incremental precompile.", jl_symbol_name(mod->name));
                     }
-                    jl_printf(JL_STDERR, "WARNING: replacing module %s.\n",
-                              jl_symbol_name(mod->name));
+                    JL_WARN("Replacing module %s.", jl_symbol_name(mod->name));
                 }
                 b->value = v;
                 jl_gc_wb_binding(b, v);
