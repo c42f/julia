@@ -988,6 +988,14 @@ void jl_depwarn(const char *msg, jl_value_t *sym);
 #define JL_WARN(...)  jl_logf(JL_LOGLEVEL_WARN,  NULL, NULL, XSTR(__FILE__:__LINE__), __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define JL_ERROR(...) jl_logf(JL_LOGLEVEL_ERROR, NULL, NULL, XSTR(__FILE__:__LINE__), __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 
+#define JL_PROGRESS(level, msg, amount)                                \
+    do {                                                               \
+        jl_value_t* kwargs[] = {(jl_value_t*)jl_symbol("progress"),    \
+                                jl_box_float64(amount)};               \
+        jl_log(JL_LOGLEVEL_INFO, NULL, NULL, XSTR(__FILE__:__LINE__),  \
+               __FILE__, __LINE__, kwargs, 2, msg);                    \
+    } while (0)
+
 // Log `msg` to the current logger by calling CoreLogging.logmsg_thunk() on the
 // julia side.
 void jl_log(int level, jl_module_t* module, const char* group, const char* id,
