@@ -1,6 +1,7 @@
 module CoreLogging
 
 import Base: isless, +, -, convert, show
+# using Base: info_color, warn_color, error_color
 
 export
     AbstractLogger,
@@ -341,8 +342,9 @@ end
         # Try really hard to get the message to the logger, with
         # progressively less information.
         try
-            msg = "Exception while generating log record in module $_module at $filepath:$line"
-            handle_message(logger, Error, msg, _module, group, id, filepath, line; exception=err)
+            msg = "Exception while generating log record:\n"
+            msg *= join("  " .* split(sprint(showerror, err), "\n"), "\n")
+            handle_message(logger, Error, msg, _module, group, id, filepath, line)
         catch err2
             try
                 # Give up and write to STDERR, in three independent calls to
@@ -480,22 +482,30 @@ function handle_message(logger::SimpleLogger, level, message, _module, group, id
         logger.message_limits[id] = remaining - 1
         remaining > 0 || return
     end
-    levelstr = string(level)
-    color = level < Info  ? :blue :
-            level < Warn  ? :cyan :
-            level < Error ? :yellow : :red
+    levelstr, color = level < Info  ? ("Debug", Base.debug_color()) :
+                      level < Warn  ? ("Info", Base.info_color()) :
+                      level < Error ? ("Warning", Base.warn_color()) :
+                                      ("Error", Base.error_color())
     buf = IOBuffer()
     iob = IOContext(buf, logger.stream)
-    print_with_color(color, iob, first(levelstr), "- ", bold=true)
-    msglines = split(string(message), '\n')
-    for i in 1:length(msglines)-1
-        println(iob, msglines[i])
-        print_with_color(color, iob, "|  ", bold=true)
-    end
-    println(iob, msglines[end], " -", levelstr, ":", _module, ":", basename(filepath), ":", line)
-    for (key,val) in pairs(kwargs)
-        print_with_color(color, iob, "|  ", bold=true)
-        println(iob, key, " = ", val)
+    msglines = split(chomp(string(message)), '\n')
+    if length(msglines) + length(kwargs) == 1
+        print_with_color(color, iob, levelstr, ": ", bold=true)
+        # print_with_color(color, buf, "- ")
+        println(iob, msglines[1]," in module ", _module, " at ", basename(filepath), ":", line)
+    else
+        print_with_color(color, iob, levelstr, "┌ ", bold=true)
+        println(iob, msglines[1])
+        for i in 2:length(msglines)
+            print_with_color(color, iob, " "^length(levelstr), "│ ", bold=true)
+            println(buf, msglines[i])
+        end
+        for (key,val) in pairs(kwargs)
+            print_with_color(color, iob, " "^length(levelstr), "│ ", bold=true)
+            println(iob, "  ", key, " = ", val)
+        end
+        print_with_color(color, iob, " "^length(levelstr), "└ ", bold=true)
+        println(iob, "in module ", _module, " at ", basename(filepath), ":", line)
     end
     write(logger.stream, take!(buf))
     nothing

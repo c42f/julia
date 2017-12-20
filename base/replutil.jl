@@ -267,6 +267,7 @@ function showerror(io::IO, ex::DomainError, bt; backtrace=true)
     backtrace && show_backtrace(io, bt)
     nothing
 end
+showerror(io::IO, ex::DomainError) = showerror(io, ex, [])
 
 function showerror(io::IO, ex::SystemError)
     if ex.extrainfo === nothing
