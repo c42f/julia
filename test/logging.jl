@@ -179,13 +179,16 @@ end
 #-------------------------------------------------------------------------------
 @testset "Logger installation and access" begin
     @testset "Global logger" begin
-        logger1 = global_logger()
+        tasklogger = current_logger!(current_task(), nothing)
+        logger1 = current_logger(:global)
         logger2 = TestLogger()
-        # global_logger() returns the previously installed logger
-        @test logger1 === global_logger(logger2)
+        # current_logger!() returns the previously installed logger
+        @test logger1 === current_logger!(:global,logger2)
         # current logger looks up global logger by default.
         @test current_logger() === logger2
-        global_logger(logger1) # Restore global logger
+        # Restore task and global loggers
+        current_logger!(:global,logger1)
+        current_logger!(current_tas(), tasklogger)
     end
 end
 

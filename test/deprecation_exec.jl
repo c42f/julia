@@ -88,7 +88,7 @@ f25130() = Base.depwarn("f25130 message", :f25130)
 # The following test is for the depwarn behavior of expressions evaluated at
 # top-level, so we can't use the usual `collect_test_logs()` / `with_logger()`
 testlogger = Test.TestLogger()
-prev_logger = global_logger(testlogger)
+prev_logger = current_logger!(:global,testlogger)
 # Each call at top level should be distinct. This won't be true if they're
 # attributed to internal C frames (including generic dispatch machinery)
 f25130()
@@ -98,4 +98,4 @@ testlogs = testlogger.logs
 @test testlogs[1].id != testlogs[2].id
 @test testlogs[1].kwargs.caller.func == Symbol("top-level scope")
 @test all(l.message == "f25130 message" for l in testlogs)
-global_logger(prev_logger)
+current_logger!(:global,prev_logger)

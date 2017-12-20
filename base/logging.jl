@@ -12,8 +12,8 @@ export
     @error,
     @logmsg,
     with_logger,
+    current_logger!,
     current_logger,
-    global_logger,
     disable_logging,
     SimpleLogger
 
@@ -404,23 +404,49 @@ function disable_logging(level::LogLevel)
     _min_enabled_level[] = level + 1
 end
 
-
 """
-    global_logger()
+    current_logger!(context, logger)
 
-Return the global logger, used to receive messages when no specific logger
-exists for the current task.
+Install `logger` to capture all log events in the given `context`.  To set the
+global logger, set `context` to the special value `:global`. To set a task
+local logger, set `context` to the desired `Task` (see also
+[`with_logger`](@ref)). The previous logger for the given context - possibly
+`nothing` - will be returned.
 
-    global_logger(logger)
+# Example
+To globally install a `SimpleLogger` which writes to a file:
 
-Set the global logger to `logger`, and return the previous global logger.
+```julia
+current_logger!(:global, SimpleLogger(open("log.txt","w")))
+```
 """
-global_logger() = _global_logstate.logger
-
-function global_logger(logger::AbstractLogger)
+function current_logger!(context::Symbol, logger)
+    context == :global || throw(ArgumentError("Unrecognized logger context $context"))
     prev = _global_logstate.logger
     global _global_logstate = LogState(logger)
     prev
+end
+function current_logger!(task::Task, logger)
+    state = task.logstate
+    prev = state == nothing ? nothing : state.logger
+    task.logstate = LogState(logger)
+    prev
+end
+
+"""
+    current_logger(context)
+
+Return the logger which captures events for the given `context`.  For the
+global logger, use the symbol `:global`.  Alternatively a `Task` may be
+supplied to return the task local logger, or `nothing` if one is not available.
+"""
+function current_logger(context::Symbol)
+    context == :global || throw(ArgumentError("Unrecognized logger context $context"))
+    _global_logstate.logger::AbstractLogger
+end
+function current_logger(task::Task)
+    state = task.logstate
+    state == nothing ? nothing : (task.logstate::LogState).logger
 end
 
 """
