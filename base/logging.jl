@@ -484,28 +484,56 @@ function handle_message(logger::SimpleLogger, level, message, _module, group, id
     end
     levelstr, color = level < Info  ? ("Debug", Base.debug_color()) :
                       level < Warn  ? ("Info", Base.info_color()) :
-                      level < Error ? ("Warning", Base.warn_color()) :
+                      level < Error ? ("Warn", Base.warn_color()) :
                                       ("Error", Base.error_color())
     buf = IOBuffer()
     iob = IOContext(buf, logger.stream)
     msglines = split(chomp(string(message)), '\n')
-    if length(msglines) + length(kwargs) == 1
-        print_with_color(color, iob, levelstr, ": ", bold=true)
-        # print_with_color(color, buf, "- ")
-        println(iob, msglines[1]," in module ", _module, " at ", basename(filepath), ":", line)
+    prefixlevel = false #level >= Warn
+    width = displaysize(logger.stream)[2]
+    locationstr = string(" @ ", _module, " ", basename(filepath), ":", line)
+    #locationstr = string("in module ", _module, " at ", basename(filepath), ":", line)
+    locationcolor = color # :white
+    singlelinewidth = 2 + length(msglines[1]) +
+                      (prefixlevel ? length(levelstr) + 2 : 0) +
+                      length(levelstr) + 3 + length(locationstr)
+    if length(msglines) + length(kwargs) == 1 && singlelinewidth <= width
+        print_with_color(color, iob, "[ ", bold=true)
+        if prefixlevel
+            print_with_color(color, iob, levelstr, ": ", bold=true)
+        end
+        print(iob, msglines[1])
+        print(iob, " "^(width - singlelinewidth))
+        #=
+        #if !prefixlevel
+            print_with_color(color, iob, " - ", levelstr, bold=true)
+        #end
+        print_with_color(color, iob, locationstr, "\n", bold=false)
+        =#
+        print_with_color(locationcolor, iob, locationstr, bold=false)
+        print_with_color(color, iob, " - ", levelstr, "\n", bold=true)
     else
-        print_with_color(color, iob, levelstr, "┌ ", bold=true)
+        print_with_color(color, iob, "┌ ", bold=true)
+        if prefixlevel
+            print_with_color(color, iob, levelstr, ": ", bold=true)
+        end
         println(iob, msglines[1])
         for i in 2:length(msglines)
-            print_with_color(color, iob, " "^length(levelstr), "│ ", bold=true)
+            print_with_color(color, iob, "│ ", bold=true)
             println(buf, msglines[i])
         end
         for (key,val) in pairs(kwargs)
-            print_with_color(color, iob, " "^length(levelstr), "│ ", bold=true)
+            print_with_color(color, iob, "│ ", bold=true)
             println(iob, "  ", key, " = ", val)
         end
-        print_with_color(color, iob, " "^length(levelstr), "└ ", bold=true)
-        println(iob, "in module ", _module, " at ", basename(filepath), ":", line)
+        print_with_color(color, iob, "└ ", bold=true)
+        #if !prefixlevel
+        #    print_with_color(color, iob, levelstr, " ", bold=true)
+        #end
+        #print(iob, " "^(max(1, width - (!prefixlevel ? 1+length(levelstr) : 0) - 2 - length(locationstr))))
+        print(iob, " "^(max(1, width - 3 - length(levelstr) - 2 - length(locationstr))))
+        print_with_color(locationcolor, iob, locationstr, bold=false)
+        print_with_color(color, iob, " - ", levelstr, "\n", bold=true)
     end
     write(logger.stream, take!(buf))
     nothing
