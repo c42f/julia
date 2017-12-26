@@ -489,14 +489,15 @@ function handle_message(logger::SimpleLogger, level, message, _module, group, id
     buf = IOBuffer()
     iob = IOContext(buf, logger.stream)
     msglines = split(chomp(string(message)), '\n')
-    prefixlevel = false #level >= Warn
+    prefixlevel = level >= Warn
+    levelonright = false
     width = displaysize(logger.stream)[2]
-    locationstr = string(" @ ", _module, " ", basename(filepath), ":", line)
+    locationstr = string(levelonright ? "" : levelstr, " @ ", _module, " ", basename(filepath), ":", line)
     #locationstr = string("in module ", _module, " at ", basename(filepath), ":", line)
-    locationcolor = color # :white
+    locationcolor = :light_black #color # :white
     singlelinewidth = 2 + length(msglines[1]) +
                       (prefixlevel ? length(levelstr) + 2 : 0) +
-                      length(levelstr) + 3 + length(locationstr)
+                      length(locationstr) + (levelonright ? length(levelstr) + 1 : 0)
     if length(msglines) + length(kwargs) == 1 && singlelinewidth <= width
         print_with_color(color, iob, "[ ", bold=true)
         if prefixlevel
@@ -511,7 +512,8 @@ function handle_message(logger::SimpleLogger, level, message, _module, group, id
         print_with_color(color, iob, locationstr, "\n", bold=false)
         =#
         print_with_color(locationcolor, iob, locationstr, bold=false)
-        print_with_color(color, iob, " - ", levelstr, "\n", bold=true)
+        levelonright && print_with_color(color, iob, " ", levelstr, bold=true)
+        print(iob, "\n")
     else
         print_with_color(color, iob, "┌ ", bold=true)
         if prefixlevel
@@ -531,9 +533,11 @@ function handle_message(logger::SimpleLogger, level, message, _module, group, id
         #    print_with_color(color, iob, levelstr, " ", bold=true)
         #end
         #print(iob, " "^(max(1, width - (!prefixlevel ? 1+length(levelstr) : 0) - 2 - length(locationstr))))
-        print(iob, " "^(max(1, width - 3 - length(levelstr) - 2 - length(locationstr))))
+        print(iob, " "^(max(1, width - 1 - (levelonright ? length(levelstr)+1 : 0) - 1 -
+                               length(locationstr))))
         print_with_color(locationcolor, iob, locationstr, bold=false)
-        print_with_color(color, iob, " - ", levelstr, "\n", bold=true)
+        levelonright && print_with_color(color, iob, " ", levelstr, bold=true)
+        print(iob, "\n")
     end
     write(logger.stream, take!(buf))
     nothing
