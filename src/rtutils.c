@@ -1076,6 +1076,22 @@ void jl_log(int level, jl_module_t *module, const char *group, const char *id,
     JL_GC_POP();
 }
 
+void jl_logf(int level, jl_module_t *module, const char *group, const char *id,
+             const char *file, int line, jl_value_t **kwargs, int kwargs_len,
+             const char *fmt, ...)
+{
+    char *msg=NULL;
+    int c;
+    va_list args;
+    va_start(args, fmt);
+    c = vasprintf(&msg, fmt, args);
+    va_end(args);
+    if (c >= 0) {
+        jl_log(level, module, group, id, file, line, kwargs, kwargs_len, msg);
+        free(msg);
+    }
+}
+
 void jl_depwarn(const char *msg, jl_value_t *sym)
 {
     static jl_value_t *depwarn_func = NULL;
