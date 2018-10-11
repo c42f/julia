@@ -78,9 +78,9 @@ function _dump_function_linfo(linfo::Core.MethodInstance, world::UInt, native::B
         throw(ArgumentError("'syntax' must be either :intel or :att"))
     end
     if native
-        llvmf = ccall(:jl_get_llvmf_decl, Ptr{Cvoid}, (Any, UInt, Bool, CodegenParams), linfo, world, wrapper, params)
+        llvmf = ccall(:jl_get_llvmf_decl, Ptr{Cvoid}, (Ref{Any}, UInt, Bool, CodegenParams), linfo, world, wrapper, params)
     else
-        llvmf = ccall(:jl_get_llvmf_defn, Ptr{Cvoid}, (Any, UInt, Bool, Bool, CodegenParams), linfo, world, wrapper, optimize, params)
+        llvmf = ccall(:jl_get_llvmf_defn, Ptr{Cvoid}, (Ref{Any}, UInt, Bool, Bool, CodegenParams), linfo, world, wrapper, optimize, params)
     end
     if llvmf == C_NULL
         error("could not compile the specified method")

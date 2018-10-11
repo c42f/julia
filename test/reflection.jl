@@ -300,9 +300,9 @@ for (f, t) in Any[(definitely_not_in_sysimg, Tuple{}),
     world = typemax(UInt)
     linfo = ccall(:jl_specializations_get_linfo, Ref{Core.MethodInstance}, (Any, Any, Any, UInt), meth, tt, env, world)
     params = Base.CodegenParams()
-    llvmf1 = ccall(:jl_get_llvmf_decl, Ptr{Cvoid}, (Any, UInt, Bool, Base.CodegenParams), linfo::Core.MethodInstance, world, true, params)
+    llvmf1 = ccall(:jl_get_llvmf_decl, Ptr{Cvoid}, (Ref{Any}, UInt, Bool, Base.CodegenParams), linfo, world, true, params)
     @test llvmf1 != C_NULL
-    llvmf2 = ccall(:jl_get_llvmf_decl, Ptr{Cvoid}, (Any, UInt, Bool, Base.CodegenParams), linfo::Core.MethodInstance, world, false, params)
+    llvmf2 = ccall(:jl_get_llvmf_decl, Ptr{Cvoid}, (Ref{Any}, UInt, Bool, Base.CodegenParams), linfo, world, false, params)
     @test llvmf2 != C_NULL
     @test ccall(:jl_get_llvm_fptr, Ptr{Cvoid}, (Ptr{Cvoid},), llvmf1) != C_NULL
     @test ccall(:jl_get_llvm_fptr, Ptr{Cvoid}, (Ptr{Cvoid},), llvmf2) != C_NULL

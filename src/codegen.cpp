@@ -1046,7 +1046,8 @@ const char *name_from_method_instance(jl_method_instance_t *li)
 // (and the shadow module), but doesn't yet compile
 // or generate object code for it
 extern "C"
-jl_llvm_functions_t jl_compile_linfo(jl_method_instance_t **pli, jl_code_info_t *src, size_t world, const jl_cgparams_t *params)
+jl_llvm_functions_t jl_compile_linfo(jl_method_instance_t **pli JL_REQUIRE_ROOTED_SLOT,
+                                     jl_code_info_t *src, size_t world, const jl_cgparams_t *params)
 {
     // N.B.: `src` may have not been rooted by the caller.
     JL_TIMING(CODEGEN);
@@ -1456,8 +1457,10 @@ void jl_extern_c(jl_function_t *f, jl_value_t *rt, jl_value_t *argt, char *name)
 // this is paired with jl_dump_function_ir and jl_dump_function_asm in particular ways:
 // misuse will leak memory or cause read-after-free
 extern "C" JL_DLLEXPORT
-void *jl_get_llvmf_defn(jl_method_instance_t *linfo, size_t world, bool getwrapper, bool optimize, const jl_cgparams_t params)
+void *jl_get_llvmf_defn(jl_method_instance_t **pli JL_REQUIRE_ROOTED_SLOT,
+                        size_t world, bool getwrapper, bool optimize, const jl_cgparams_t params)
 {
+    jl_method_instance_t *linfo = *pli;
     if (jl_is_method(linfo->def.method) && linfo->def.method->source == NULL &&
         linfo->def.method->generator == NULL) {
         // not a generic function
@@ -1467,7 +1470,8 @@ void *jl_get_llvmf_defn(jl_method_instance_t *linfo, size_t world, bool getwrapp
     jl_code_info_t *src = (jl_code_info_t*)linfo->inferred;
     JL_GC_PUSH1(&src);
     if (!src || (jl_value_t*)src == jl_nothing) {
-        src = jl_type_infer(&linfo, world, 0);
+        src = jl_type_infer(pli, world, 0);
+        linfo = *pli;
         if (!src && jl_is_method(linfo->def.method))
             src = linfo->def.method->generator ? jl_code_for_staged(linfo) : (jl_code_info_t*)linfo->def.method->source;
     }
@@ -1534,8 +1538,9 @@ void *jl_get_llvmf_defn(jl_method_instance_t *linfo, size_t world, bool getwrapp
 
 
 extern "C" JL_DLLEXPORT
-void *jl_get_llvmf_decl(jl_method_instance_t *linfo, size_t world, bool getwrapper, const jl_cgparams_t params)
+void *jl_get_llvmf_decl(jl_method_instance_t **pli JL_REQUIRE_ROOTED_SLOT, size_t world, bool getwrapper, const jl_cgparams_t params)
 {
+    jl_method_instance_t *linfo = *pli;
     if (jl_is_method(linfo->def.method) && linfo->def.method->source == NULL &&
         linfo->def.method->generator == NULL) {
         // not a generic function
@@ -1544,9 +1549,12 @@ void *jl_get_llvmf_decl(jl_method_instance_t *linfo, size_t world, bool getwrapp
 
     // compile this normally
     jl_code_info_t *src = NULL;
-    if (linfo->inferred == NULL)
-        src = jl_type_infer(&linfo, world, 0);
-    jl_llvm_functions_t decls = jl_compile_linfo(&linfo, src, world, &jl_default_cgparams);
+    if (linfo->inferred == NULL) {
+        src = jl_type_infer(pli, world, 0);
+        linfo = *pli;
+    }
+    jl_llvm_functions_t decls = jl_compile_linfo(pli, src, world, &jl_default_cgparams);
+    linfo = *pli;
 
     if (decls.functionObject == NULL && linfo->invoke == jl_fptr_const_return && jl_is_method(linfo->def.method)) {
         // normally we don't generate native code for these functions, so need an exception here
@@ -1554,11 +1562,13 @@ void *jl_get_llvmf_decl(jl_method_instance_t *linfo, size_t world, bool getwrapp
         JL_LOCK(&codegen_lock);
         decls = linfo->functionObjectsDecls;
         if (decls.functionObject == NULL) {
-            src = jl_type_infer(&linfo, world, 0);
+            src = jl_type_infer(pli, world, 0);
+            linfo = *pli;
             if (!src) {
                 src = linfo->def.method->generator ? jl_code_for_staged(linfo) : (jl_code_info_t*)linfo->def.method->source;
             }
-            decls = jl_compile_linfo(&linfo, src, world, &params);
+            decls = jl_compile_linfo(pli, src, world, &params);
+            linfo = *pli;
             linfo->functionObjectsDecls = decls;
         }
         JL_UNLOCK(&codegen_lock);
