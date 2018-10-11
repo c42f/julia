@@ -1079,11 +1079,13 @@ jl_llvm_functions_t jl_compile_linfo(jl_method_instance_t **pli JL_REQUIRE_ROOTE
 
     // Codegen lock held in this block
     {
+        printf("Codegen lock held\n"); fflush(stdout);
         // Step 1: Re-check if this was already compiled (it may have been while
         // we waited at the lock).
         if (!jl_is_method(li->def.method)) {
             src = (jl_code_info_t*)li->inferred;
             if (decls.functionObject != NULL || !src || !jl_is_code_info(src) || li->invoke == jl_fptr_const_return) {
+                printf("locked_out 1\n"); fflush(stdout);
                 goto locked_out;
             }
         }
@@ -1091,29 +1093,39 @@ jl_llvm_functions_t jl_compile_linfo(jl_method_instance_t **pli JL_REQUIRE_ROOTE
             // If the caller didn't provide the source,
             // try to infer it for ourself, but first, re-check if it's already compiled.
             assert(li->min_world <= world && li->max_world >= world);
-            if ((params->cached && decls.functionObject != NULL) || li->invoke == jl_fptr_const_return)
+            if ((params->cached && decls.functionObject != NULL) || li->invoke == jl_fptr_const_return) {
+                printf("locked_out 2\n"); fflush(stdout);
                 goto locked_out;
+            }
 
             // see if it is inferred
             src = (jl_code_info_t*)li->inferred;
             if (src) {
-                if ((jl_value_t*)src != jl_nothing)
+                if ((jl_value_t*)src != jl_nothing) {
+                    printf("do jl_uncompress_ast\n"); fflush(stdout);
                     src = jl_uncompress_ast(li->def.method, (jl_array_t*)src);
+                }
                 if (!jl_is_code_info(src)) {
+                    printf("do jl_type_infer\n"); fflush(stdout);
                     src = jl_type_infer(pli, world, 0);
                     li = *pli;
                 }
-                if (!src || li->invoke == jl_fptr_const_return)
+                if (!src || li->invoke == jl_fptr_const_return) {
+                    printf("locked_out 3 %p %d\n",
+                           src, (int)(li->invoke == jl_fptr_const_return)); fflush(stdout);
                     goto locked_out;
+                }
             }
             else {
                 // declare a failure to compile
+                printf("locked_out 4\n"); fflush(stdout);
                 goto locked_out;
             }
         }
         else if (params->cached && decls.functionObject != NULL) {
             // similar to above, but never returns a NULL
             // decl (unless compile fails), even if invoke == jl_fptr_const_return
+            printf("locked_out 5\n"); fflush(stdout);
             goto locked_out;
         }
         else {
@@ -1131,6 +1143,7 @@ jl_llvm_functions_t jl_compile_linfo(jl_method_instance_t **pli JL_REQUIRE_ROOTE
         // Step 3. actually do the work of emitting the function
         std::unique_ptr<Module> m;
         JL_TRY {
+            //printf("Actually compile the thing\n"); fflush(stdout);
             jl_llvm_functions_t *pdecls;
             if (!params->cached)
                 pdecls = &decls;
@@ -1146,6 +1159,7 @@ jl_llvm_functions_t jl_compile_linfo(jl_method_instance_t **pli JL_REQUIRE_ROOTE
             //n_emit++;
         }
         JL_CATCH {
+            printf("IN JL_CATCH... something screwy is occurring\n"); fflush(stdout);
             // something failed! this is very bad, since other WIP may be pointing to this function
             // but there's not much we can do now. try to clear much of the WIP anyways.
             li->functionObjectsDecls.functionObject = NULL;
@@ -1229,7 +1243,9 @@ jl_llvm_functions_t jl_compile_linfo(jl_method_instance_t **pli JL_REQUIRE_ROOTE
     JL_GC_POP();
     return decls;
 
+    assert(0 && "We got here, which is impossible");
 locked_out:
+    printf("locked_out!! decls.functionObject = %p\n", decls.functionObject); fflush(stdout);
     JL_UNLOCK(&codegen_lock);
     JL_GC_POP();
     return decls;
@@ -1553,10 +1569,14 @@ void *jl_get_llvmf_decl(jl_method_instance_t **pli JL_REQUIRE_ROOTED_SLOT, size_
         src = jl_type_infer(pli, world, 0);
         linfo = *pli;
     }
+    printf("CALL jl_compile_linfo\n"); fflush(stdout);
     jl_llvm_functions_t decls = jl_compile_linfo(pli, src, world, &jl_default_cgparams);
+    printf("AFTER jl_compile_linfo decls.functionObject = %p\n",
+           decls.functionObject); fflush(stdout);
     linfo = *pli;
 
     if (decls.functionObject == NULL && linfo->invoke == jl_fptr_const_return && jl_is_method(linfo->def.method)) {
+        printf("IN HERE\n"); fflush(stdout);
         // normally we don't generate native code for these functions, so need an exception here
         // This leaks a bit of memory to cache native code that we'll never actually need
         JL_LOCK(&codegen_lock);
@@ -1573,6 +1593,8 @@ void *jl_get_llvmf_decl(jl_method_instance_t **pli JL_REQUIRE_ROOTED_SLOT, size_
         }
         JL_UNLOCK(&codegen_lock);
     }
+    printf("decls.functionObject = %p\n", decls.functionObject);
+    fflush(stdout);
 
     if (!getwrapper && decls.specFunctionObject) {
         if (!strcmp(decls.functionObject, "jl_fptr_args")) {
@@ -1592,7 +1614,7 @@ void *jl_get_llvmf_decl(jl_method_instance_t **pli JL_REQUIRE_ROOTED_SLOT, size_
             return returninfo.decl;
         }
     }
-    auto f = Function::Create(jl_func_sig, GlobalVariable::ExternalLinkage, decls.functionObject);
+    auto f = Function::Create(jl_func_sig, GlobalVariable::ExternalLinkage, decls.functionObject ? decls.functionObject : "UNKNOWN!!!");
     add_return_attr(f, Attribute::NonNull);
     f->addFnAttr(Thunk);
     return f;

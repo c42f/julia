@@ -8,6 +8,11 @@
   . static parameter inference
   . method specialization and caching, invoking type inference
 */
+
+// Same as FORCE_ASSERTIONS
+#undef NDEBUG
+#undef JL_NDEBUG
+
 #include <stdlib.h>
 #include <string.h>
 #include "julia.h"
@@ -16,6 +21,18 @@
 #include <unistd.h>
 #endif
 #include "julia_assert.h"
+
+#include <stdio.h>
+
+
+STATIC_INLINE jl_value_t *jl_svecref_hack(void *t JL_PROPAGATES_ROOT, size_t i) JL_NOTSAFEPOINT
+{
+    assert(jl_typeis(t,jl_simplevector_type)); // HERE!!
+    assert(i < jl_svec_len(t));
+    return jl_svec_data(t)[i];
+}
+
+#define jl_svecref(t, i) jl_svecref_hack(t,i)
 
 // The compilation signature is not used to cache the method if the number of overlapping methods is greater than this
 #define MAX_UNSPECIALIZED_CONFLICTS 32
@@ -272,7 +289,10 @@ jl_code_info_t *jl_type_infer(jl_method_instance_t **pli JL_ROOTS_TEMPORARILY, s
     ptls->world_age = jl_typeinf_world;
     li->inInference = 1;
     in_inference++;
-    jl_svec_t *linfo_src;
+    volatile jl_svec_t *linfo_src;
+    //jl_value_t *linfo_src;
+
+    /*
     JL_TRY {
         linfo_src = (jl_svec_t*)jl_apply(fargs, 3);
     }
@@ -283,16 +303,60 @@ jl_code_info_t *jl_type_infer(jl_method_instance_t **pli JL_ROOTS_TEMPORARILY, s
         jlbacktrace(); // written to STDERR_FILENO
         linfo_src = NULL;
     }
+    */
+
+    jl_handler_t __eh;
+    size_t __exc_stack_state = jl_exc_stack_state();
+    jl_enter_handler(&__eh);
+    if (!__sigsetjmp(__eh.eh_ctx, 0)) {
+        linfo_src = (jl_svec_t*)jl_apply(fargs, 3);
+        jl_eh_restore_state(&__eh);
+    }
+    else {
+        jl_eh_restore_state(&__eh);
+        jl_printf(jl_uv_stderr, "Internal error: encountered unexpected error in runtime:\n");
+        jl_static_show(jl_uv_stderr, jl_current_exception());
+        jl_printf(jl_uv_stderr, "\n");
+        jlbacktrace();
+        linfo_src = ((void *)0);
+        jl_restore_exc_stack(__exc_stack_state);
+    }
+
     ptls->world_age = last_age;
     in_inference--;
     li->inInference = 0;
 
-    if (linfo_src &&
-            jl_is_svec(linfo_src) && jl_svec_len(linfo_src) == 2 &&
-            jl_is_method_instance(jl_svecref(linfo_src, 0)) &&
-            jl_is_code_info(jl_svecref(linfo_src, 1))) {
-        *pli = (jl_method_instance_t*)jl_svecref(linfo_src, 0);
-        src = (jl_code_info_t*)jl_svecref(linfo_src, 1);
+    /*
+    printf("jl_type_infer linfo_src = %p\n", linfo_src); fflush(stdout);
+    printf("jl_is_svec(linfo_src) = %d\n", jl_is_svec(linfo_src)); fflush(stdout);
+    printf("jl_svec_len(linfo_src) = %zu\n", jl_svec_len(linfo_src)); fflush(stdout);
+    printf("jl_type_infer jl_is_method_instance(jl_svecref(linfo_src, 0)) = %d\n",
+           jl_is_method_instance(jl_svecref(linfo_src, 0))); fflush(stdout);
+    printf("jl_type_infer jl_is_code_info(jl_svecref(linfo_src, 1)) = %d\n",
+           jl_is_code_info(jl_svecref(linfo_src, 1))); fflush(stdout);
+    */
+
+    //jl_gc_collect(1);
+    if (linfo_src && jl_is_svec(linfo_src) && jl_svec_len(linfo_src) == 2) {
+        printf("GOT HERE1!!\n"); fflush(stdout);
+        jl_value_t *mi = jl_svecref(linfo_src, 0);
+        jl_value_t *ci = jl_svecref(linfo_src, 1);
+        // Miscompilation here but not with printf
+        /*
+        printf("%p %p\n",
+               (jl_value_t*)(((jl_taggedvalue_t*)((char*)(mi) - sizeof(jl_taggedvalue_t)))->header & ~(uintptr_t)15),
+               (jl_value_t*)(jl_method_instance_type));
+        */
+        if (jl_is_method_instance(mi) && jl_is_code_info(ci))
+        {
+            //printf("GOT HERE!!\n"); fflush(stdout);
+            //*pli = (jl_method_instance_t*)mi;
+            //src = (jl_code_info_t*)ci;
+            // Following alternative miscompiles
+            *pli = jl_svecref(linfo_src, 0);
+            src = jl_svecref(linfo_src, 1);
+            printf("src = %p\n", src); fflush(stdout);
+        }
     }
     JL_GC_POP();
 #endif
