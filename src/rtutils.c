@@ -305,7 +305,7 @@ void jl_copy_excstack(jl_excstack_t *dest, jl_excstack_t *src) JL_NOTSAFEPOINT
 }
 
 void jl_reserve_excstack(jl_excstack_t **stack JL_REQUIRE_ROOTED_SLOT,
-                          size_t reserved_size)
+                         size_t reserved_size)
 {
     jl_excstack_t *s = *stack;
     if (s && s->reserved_size >= reserved_size)
@@ -320,8 +320,8 @@ void jl_reserve_excstack(jl_excstack_t **stack JL_REQUIRE_ROOTED_SLOT,
 }
 
 void jl_push_excstack(jl_excstack_t **stack JL_REQUIRE_ROOTED_SLOT JL_ROOTING_ARGUMENT,
-                       jl_value_t *exception JL_ROOTED_ARGUMENT,
-                       uintptr_t *bt_data, size_t bt_size)
+                      jl_value_t *exception JL_ROOTED_ARGUMENT,
+                      uintptr_t *bt_data, size_t bt_size)
 {
     jl_reserve_excstack(stack, (*stack ? (*stack)->top : 0) + bt_size + 2);
     jl_excstack_t *s = *stack;
@@ -329,6 +329,37 @@ void jl_push_excstack(jl_excstack_t **stack JL_REQUIRE_ROOTED_SLOT JL_ROOTING_AR
     s->top += bt_size + 2;
     jl_excstack_raw(s)[s->top-2] = bt_size;
     jl_excstack_raw(s)[s->top-1] = (uintptr_t)exception;
+}
+
+JL_DLLEXPORT void jl_static_show_excstack(uv_stream_t *out, jl_task_t* task, int include_bt)
+{
+    jl_static_show_excstack_(out, task->excstack, include_bt);
+}
+
+// Return data from the exception stack for `task` as an array of Any, starting
+// with the top of the stack and returning up to `max_entries`. If requested by
+// setting the `include_bt` flag, backtrace data in bt,bt2 format is
+// interleaved.
+JL_DLLEXPORT void jl_static_show_excstack_(uv_stream_t *out, jl_excstack_t* excstack, int include_bt)
+{
+    if (excstack == NULL) {
+        jl_printf("[Empty exception stack]\n");
+        return;
+    }
+    size_t itr = excstack->top;
+    int i = 0;
+    while (itr > 0 && i < max_entries) {
+        jl_value_t* exc = jl_excstack_exception(excstack, itr);
+        jl_static_show(out, exc);
+        jl_printf(out, "\n");
+        if (include_bt) {
+            jl_static_show_backtrace(out, jl_excstack_bt_data(excstack, itr),
+                                     jl_excstack_bt_size(excstack, itr));
+        }
+        itr = jl_excstack_next(excstack, itr);
+        i++;
+    }
+    return (jl_value_t*)stack;
 }
 
 // misc -----------------------------------------------------------------------

@@ -1180,6 +1180,7 @@ int jl_getFunctionInfo(jl_frame_t **frames_out, size_t pointer, int skipC, int n
     // This function is not allowed to reference any TLS variables if noInline
     // since it can be called from an unmanaged thread on OSX.
 
+    // FIXME: calloc not async-signal-safe!
     jl_frame_t *frames = (jl_frame_t*)calloc(sizeof(jl_frame_t), 1);
     frames[0].line = -1;
     *frames_out = frames;
