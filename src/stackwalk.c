@@ -27,10 +27,11 @@ extern "C" {
 static int jl_unw_init(bt_cursor_t *cursor, bt_context_t *context);
 static int jl_unw_step(bt_cursor_t *cursor, uintptr_t *ip, uintptr_t *sp, uintptr_t *fp);
 
-size_t jl_unw_stepn(bt_cursor_t *cursor, uintptr_t *ip, uintptr_t *sp, size_t maxsize, int add_interp_frames)
+size_t jl_unw_stepn(bt_cursor_t *cursor, uintptr_t *ip, uintptr_t *sp, int add_interp_frames)
 {
     jl_ptls_t ptls = jl_get_ptls_states();
     volatile size_t n = 0;
+    uintptr_t theip;
     uintptr_t thesp;
     uintptr_t thefp;
 #if defined(_OS_WINDOWS_) && !defined(_CPU_X86_64_)
@@ -48,13 +49,18 @@ size_t jl_unw_stepn(bt_cursor_t *cursor, uintptr_t *ip, uintptr_t *sp, size_t ma
                n = maxsize; // return maxsize + 1 if ran out of space
                break;
            }
-           if (!jl_unw_step(cursor, &ip[n], &thesp, &thefp))
+           if (!jl_unw_step(cursor, &theip, &thesp, &thefp))
                break;
            if (sp)
                sp[n] = thesp;
            if (add_interp_frames && jl_is_enter_interpreter_frame(ip[n])) {
-               n += jl_capture_interp_frame(&ip[n], thesp, thefp, maxsize-n-1) + 1;
+               if (!grow_ip(opaque, ip, sp, 3))
+                   break;
+               jl_capture_interp_frame(, theip, thesp, thefp);
+               memcpy(&ip[n], iframe_data, datasize*sizeof(uintptr_t));
+               n += datasize;
            } else {
+               ip[n] = theip;
                n++;
            }
         }

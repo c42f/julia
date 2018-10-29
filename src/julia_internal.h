@@ -657,7 +657,7 @@ STATIC_INLINE char *jl_copy_str(char **to, const char *from)
 }
 JL_DLLEXPORT int jl_is_interpreter_frame(uintptr_t ip);
 JL_DLLEXPORT int jl_is_enter_interpreter_frame(uintptr_t ip);
-JL_DLLEXPORT size_t jl_capture_interp_frame(uintptr_t *data, uintptr_t sp, uintptr_t fp, size_t space_remaining);
+JL_DLLEXPORT void jl_capture_interp_frame(uintptr_t *data, uintptr_t sp, uintptr_t fp);
 
 // Exception stack: a stack of pairs of (exception,raw_backtrace).
 // The stack may be traversed and accessed with the functions below.

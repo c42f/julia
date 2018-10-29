@@ -390,20 +390,17 @@ JL_DLLEXPORT int jl_is_enter_interpreter_frame(uintptr_t ip)
     return enter_interpreter_frame_start <= ip && ip <= enter_interpreter_frame_end;
 }
 
-JL_DLLEXPORT size_t jl_capture_interp_frame(uintptr_t *data, uintptr_t sp, uintptr_t fp, size_t space_remaining)
+JL_DLLEXPORT void jl_capture_interp_frame(uintptr_t data*, uintptr_t sp, uintptr_t fp)
 {
 #ifdef FP_CAPTURE_OFFSET
     interpreter_state *s = (interpreter_state *)(fp-FP_CAPTURE_OFFSET);
 #else
     interpreter_state *s = (interpreter_state *)(sp+TOTAL_STACK_PADDING);
 #endif
-    if (space_remaining <= 1)
-        return 0;
     // Sentinel value to indicate an interpreter frame
     data[0] = JL_BT_INTERP_FRAME;
     data[1] = s->mi ? (uintptr_t)s->mi : s->src ? (uintptr_t)s->src : (uintptr_t)jl_nothing;
     data[2] = (uintptr_t)s->ip;
-    return 2;
 }
 
 extern void * CALLBACK_ABI enter_interpreter_frame(void * CALLBACK_ABI (*callback)(interpreter_state *, void *), void *arg);
@@ -418,9 +415,12 @@ JL_DLLEXPORT int jl_is_enter_interpreter_frame(uintptr_t ip)
     return 0;
 }
 
-JL_DLLEXPORT size_t jl_capture_interp_frame(uintptr_t *data, uintptr_t sp, uintptr_t fp, size_t space_remaining)
+JL_DLLEXPORT void jl_capture_interp_frame(uintptr_t *data, uintptr_t sp, uintptr_t fp)
 {
-    return 0;
+    data[0] = JL_BT_INTERP_FRAME;
+    data[1] = (uintptr_t)jl_nothing;
+    data[2] = 0;
+    assert(0 && "jl_capture_interp_frame called, but NO_INTERP_BT set");
 }
 #define CALLBACK_ABI
 void *NOINLINE enter_interpreter_frame(void *(*callback)(interpreter_state *, void *), void *arg) {
