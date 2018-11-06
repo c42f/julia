@@ -99,7 +99,27 @@ function display_error(io::IO, er, bt)
     showerror(IOContext(io, :limit => true), er, bt)
     println(io)
 end
+function display_error(io::IO, stack::ExceptionStack)
+    nexc = length(stack)
+    printstyled(io, "ERROR: "; bold=true, color=Base.error_color())
+    for i = nexc:-1:1
+        if nexc != i
+            printstyled(io, "caused by [exception ", i, "]\n", color=:light_black)
+        end
+        exc,bt = stack[i]
+        if bt != nothing
+            # remove REPL-related (or other) frames
+            eval_ind = findlast(addr->ip_matches_func(addr, :eval), bt)
+            if eval_ind !== nothing
+                bt = bt[1:eval_ind-1]
+            end
+            showerror(io, exc, bt, backtrace=bt!==nothing)
+            println(io)
+        end
+    end
+end
 display_error(er, bt) = display_error(stderr, er, bt)
+display_error(er::ExceptionStack) = display_error(stderr, er)
 display_error(er) = display_error(er, [])
 
 function eval_user_input(@nospecialize(ast), show_value::Bool)
@@ -423,8 +443,8 @@ function _start()
     @eval Main import Base.MainInclude: eval, include
     try
         exec_options(JLOptions())
-    catch err
-        invokelatest(display_error, err, catch_backtrace())
+    catch
+        invokelatest(display_error, current_exceptions())
         exit(1)
     end
     if is_interactive && have_color

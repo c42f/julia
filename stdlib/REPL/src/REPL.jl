@@ -61,7 +61,7 @@ const JULIA_PROMPT = "julia> "
 mutable struct REPLBackend
     "channel for AST"
     repl_channel::Channel
-    "channel for results: (value, nothing) or (error, backtrace)"
+    "channel for results: (value, iserror)"
     response_channel::Channel
     "flag indicating the state of this backend"
     in_eval::Bool
@@ -73,28 +73,28 @@ mutable struct REPLBackend
 end
 
 function eval_user_input(@nospecialize(ast), backend::REPLBackend)
-    iserr, lasterr = false, ((), nothing)
+    lasterr = nothing
     Base.sigatomic_begin()
     while true
         try
             Base.sigatomic_end()
-            if iserr
-                put!(backend.response_channel, lasterr)
+            if lasterr !== nothing
+                put!(backend.response_channel, (lasterr,true))
             else
                 backend.in_eval = true
                 value = Core.eval(Main, ast)
                 backend.in_eval = false
                 # note: value wrapped carefully here to ensure it doesn't get passed through expand
                 ccall(:jl_set_global, Cvoid, (Any, Any, Any), Main, :ans, value)
-                put!(backend.response_channel, (value, nothing))
+                put!(backend.response_channel, (value,false))
             end
             break
         catch err
-            if iserr
+            if lasterr !== nothing
                 println("SYSTEM ERROR: Failed to report error to REPL frontend")
                 println(err)
             end
-            iserr, lasterr = true, (err, catch_backtrace())
+            lasterr = current_exceptions()
         end
     end
     Base.sigatomic_end()
@@ -134,20 +134,20 @@ function display(d::REPLDisplay, mime::MIME"text/plain", x)
 end
 display(d::REPLDisplay, x) = display(d, MIME("text/plain"), x)
 
-function print_response(repl::AbstractREPL, @nospecialize(val), bt, show_value::Bool, have_color::Bool)
-    repl.waserror = bt !== nothing
+function print_response(repl::AbstractREPL, @nospecialize(response), show_value::Bool, have_color::Bool)
+    repl.waserror = response[2]
     io = IOContext(outstream(repl), :module => Main)
-    print_response(io, val, bt, show_value, have_color, specialdisplay(repl))
+    print_response(io, response, show_value, have_color, specialdisplay(repl))
     nothing
 end
-function print_response(errio::IO, @nospecialize(val), bt, show_value::Bool, have_color::Bool, specialdisplay=nothing)
+function print_response(errio::IO, @nospecialize(response), show_value::Bool, have_color::Bool, specialdisplay=nothing)
     Base.sigatomic_begin()
+    val, iserr = response
     while true
         try
             Base.sigatomic_end()
-            if bt !== nothing
-                Base.invokelatest(Base.display_error, errio, val, bt)
-                iserr, lasterr = false, ()
+            if iserr
+                Base.invokelatest(Base.display_error, errio, val)
             else
                 if val !== nothing && show_value
                     try
@@ -163,15 +163,14 @@ function print_response(errio::IO, @nospecialize(val), bt, show_value::Bool, hav
                 end
             end
             break
-        catch err
-            if bt !== nothing
-                println(errio, "SYSTEM: show(lasterr) caused an error")
-                println(errio, err)
-                Base.show_backtrace(errio, bt)
+        catch
+            if iserr
+                println(errio, "SYSTEM (REPL): showing an error caused an error")
+                println(errio, current_exceptions())
                 break
             end
-            val = err
-            bt = catch_backtrace()
+            val = current_exceptions()
+            iserr = true
         end
     end
     Base.sigatomic_end()
@@ -207,7 +206,6 @@ function run_frontend(repl::BasicREPL, backend::REPLBackendRef)
     d = REPLDisplay(repl)
     dopushdisplay = !in(d,Base.Multimedia.displays)
     dopushdisplay && pushdisplay(d)
-    repl_channel, response_channel = backend.repl_channel, backend.response_channel
     hit_eof = false
     while true
         Base.reseteof(repl.terminal)
@@ -238,17 +236,14 @@ function run_frontend(repl::BasicREPL, backend::REPLBackendRef)
             (isa(ast,Expr) && ast.head == :incomplete) || break
         end
         if !isempty(line)
-            put!(repl_channel, (ast, 1))
-            val, bt = take!(response_channel)
-            if !ends_with_semicolon(line)
-                print_response(repl, val, bt, true, false)
-            end
+            response = eval_with_backend(ast, backend)
+            print_response(repl, response, !ends_with_semicolon(line), false)
         end
         write(repl.terminal, '\n')
         ((!interrupted && isempty(line)) || hit_eof) && break
     end
     # terminate backend
-    put!(repl_channel, (nothing, -1))
+    put!(backend.repl_channel, (nothing, -1))
     dopushdisplay && popdisplay(d)
     nothing
 end
@@ -686,12 +681,13 @@ find_hist_file() = get(ENV, "JULIA_HISTORY",
 
 backend(r::AbstractREPL) = r.backendref
 
-send_to_backend(ast, backend::REPLBackendRef) =
-    send_to_backend(ast, backend.repl_channel, backend.response_channel)
-
-function send_to_backend(ast, req, rep)
-    put!(req, (ast, 1))
-    return take!(rep) # (val, bt)
+function eval_with_backend(ast, backend::REPLBackendRef)
+    try
+        put!(backend.repl_channel, (ast, 1))
+        return take!(backend.response_channel) # (val, iserr)
+    catch
+        (current_exceptions(), true)
+    end
 end
 
 function respond(f, repl, main; pass_empty = false)
@@ -702,17 +698,9 @@ function respond(f, repl, main; pass_empty = false)
         line = String(take!(buf))
         if !isempty(line) || pass_empty
             reset(repl)
-            local val, bt
-            try
-                response = Base.invokelatest(f, line)
-                val, bt = send_to_backend(response, backend(repl))
-            catch err
-                val = err
-                bt = catch_backtrace()
-            end
-            if !ends_with_semicolon(line) || bt !== nothing
-                print_response(repl, val, bt, true, Base.have_color)
-            end
+            ast = Base.invokelatest(f, line)
+            response = eval_with_backend(ast, backend(repl))
+            print_response(repl, response, !ends_with_semicolon(line), Base.have_color)
         end
         prepare_next(repl)
         reset_state(s)
@@ -852,8 +840,8 @@ function setup_interface(
                 close(f)
             end
             hist_from_file(hp, f, hist_path)
-        catch e
-            print_response(repl, e, catch_backtrace(), true, Base.have_color)
+        catch
+            print_response(repl, (current_exceptions(),true), true, Base.have_color)
             println(outstream(repl))
             @info "Disabling history file for this session"
             repl.history_file = false
@@ -1114,7 +1102,6 @@ function run_frontend(repl::StreamREPL, backend::REPLBackendRef)
     d = REPLDisplay(repl)
     dopushdisplay = !in(d,Base.Multimedia.displays)
     dopushdisplay && pushdisplay(d)
-    repl_channel, response_channel = backend.repl_channel, backend.response_channel
     while !eof(repl.stream)
         if have_color
             print(repl.stream,repl.prompt_color)
@@ -1129,15 +1116,12 @@ function run_frontend(repl::StreamREPL, backend::REPLBackendRef)
             if have_color
                 print(repl.stream, Base.color_normal)
             end
-            put!(repl_channel, (ast, 1))
-            val, bt = take!(response_channel)
-            if !ends_with_semicolon(line)
-                print_response(repl, val, bt, true, have_color)
-            end
+            response = eval_with_backend(ast, backend)
+            print_response(repl, response, !ends_with_semicolon(line), have_color)
         end
     end
     # Terminate Backend
-    put!(repl_channel, (nothing, -1))
+    put!(backend.repl_channel, (nothing, -1))
     dopushdisplay && popdisplay(d)
     nothing
 end
