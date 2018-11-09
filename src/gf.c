@@ -432,6 +432,14 @@ JL_DLLEXPORT jl_method_instance_t* jl_set_method_inferred(
     li->functionObjectsDecls.functionObject = NULL;
     li->functionObjectsDecls.specFunctionObject = NULL;
     li->rettype = rettype;
+    if (li->def.method->name == jl_symbol("rem")) {
+        jl_printf(JL_STDOUT, "jl_set_method_inferred rem; rettype = ");
+        jl_static_show(JL_STDOUT, li->rettype);
+        jl_printf(JL_STDOUT, "   ");
+        jl_static_show(JL_STDOUT, li->specTypes);
+        jl_printf(JL_STDOUT, "\n");
+        //jlbacktrace2();
+    }
     jl_gc_wb(li, rettype);
     li->inferred = inferred;
     jl_gc_wb(li, inferred);

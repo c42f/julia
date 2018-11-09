@@ -1051,6 +1051,8 @@ STATIC_INLINE void jl_store_unaligned_i16(void *ptr, uint16_t val) JL_NOTSAFEPOI
     memcpy(ptr, &val, 2);
 }
 
+JL_DLLEXPORT void jlbacktrace2(void);
+
 #if jl_has_builtin(__builtin_assume_aligned) || defined(_COMPILER_GCC_)
 #define jl_assume_aligned(ptr, align) __builtin_assume_aligned(ptr, align)
 #elif defined(_COMPILER_INTEL_)
