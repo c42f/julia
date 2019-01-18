@@ -268,9 +268,9 @@ JL_GC_POP();
 ```
 
 The `JL_GC_POP` call releases the references established by the previous `JL_GC_PUSH`. Note that
-`JL_GC_PUSH`  is working on the stack, so it must be exactly paired with a `JL_GC_POP` before the
-stack frame is destroyed. This means that `JL_GC_POP` must be on the same block scope or in one nested
-scope of that `JL_GC_PUSH` was called.
+`JL_GC_PUSH` stores references on the C stack, so it must be exactly paired with a `JL_GC_POP`
+before the scope is exited. That is, before the function returns, or control flow otherwise
+leaves the block in which the `JL_GC_PUSH` was invoked.
 
 Several Julia values can be pushed at once using the `JL_GC_PUSH2` , `JL_GC_PUSH3` , `JL_GC_PUSH4` ,
 `JL_GC_PUSH5` , and `JL_GC_PUSH6` macros. To push an array of Julia values one can use the
