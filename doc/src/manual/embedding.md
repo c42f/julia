@@ -359,23 +359,25 @@ JL_GC_POP();
 jl_call3(setindex, refs, rvar, rvar);
 ```
 
-The GC can be allowed to deallocate the variables by removing the reference to them in `refs` using
-the function `delete!`, provided that no other reference to the variables is kept anywhere:
+The GC can be allowed to deallocate a variable by removing the reference to it from `refs` using
+the function `delete!`, provided that no other reference to the variable is kept anywhere:
 
 ```c
 jl_function_t* delete = jl_get_function(jl_base_module, "delete!");
 jl_call2(delete, refs, rvar);
 ```
 
-For very simple implementations, it should be easier to just create a global container of type
-`Vector{Any}` and fetch the elements from it when necessary, or even to create one global variable
-per pointer using:
+As an alternative for very simple cases, it is possible to just create a global container of type
+`Vector{Any}` and fetch the elements from that when necessary, or even to create one global variable
+per pointer using
 
 ```c
 jl_set_global(jl_main_module, jl_symbol("var"), var);
 ```
 
-The garbage collector also operates under the assumption that it is aware of every old-generation
+### Updating fields of GC-managed objects
+
+The garbage collector operates under the assumption that it is aware of every old-generation
 object pointing to a young-generation one. Any time a pointer is updated breaking that assumption,
 it must be signaled to the collector with the `jl_gc_wb` (write barrier) function like so:
 
