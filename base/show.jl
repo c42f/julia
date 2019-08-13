@@ -1340,6 +1340,10 @@ function show_unquoted(io::IO, ex::Expr, indent::Int, prec::Int)
         show_unquoted(io, args[1], indent)
         print(io, "...")
 
+    elseif head === :reduce_arg && nargs == 1
+        print(io, "...")
+        show_unquoted(io, args[1], indent)
+
     elseif (nargs == 0 && head in (:break, :continue))
         print(io, head)
 

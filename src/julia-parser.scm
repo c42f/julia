@@ -115,7 +115,7 @@
 (define syntactic-operators
   (append! (add-dots '(= += -= *= /= //= |\\=| ^= ÷= %= <<= >>= >>>= |\|=| &= ⊻=))
            '(:= --> $= && |\|\|| |.| ... ->)))
-(define syntactic-unary-operators '($ & |::|))
+(define syntactic-unary-operators '($ & |::| ...))
 
 (define syntactic-op? (Set syntactic-operators))
 (define syntactic-unary-op? (Set syntactic-unary-operators))
@@ -1111,12 +1111,13 @@
   (let ((op (peek-token s)))
     (if (syntactic-unary-op? op)
         (begin (take-token s)
-               (cond ((and (memq op '(& $))
+               (cond ((and (memq op '(& $ ...))
                            (let ((next (peek-token s)))
                              (or (closing-token? next) (newline? next))))
                       op)
-                     ((memq op '(& |::|))  (list op (parse-where s parse-call)))
-                     (else                 (list op (parse-unary-prefix s)))))
+                     ((memq op '(& |::| ...))  (list (if (eq? op '...) 'reduce_arg op)
+                                                     (parse-where s parse-call)))
+                     (else                     (list op (parse-unary-prefix s)))))
         (parse-atom s))))
 
 (define (parse-def s is-func anon)
@@ -1952,7 +1953,7 @@
       ((eqv? nxt #\) )
        ;; empty tuple ()
        (begin (take-token s) '((tuple) . #t)))
-      ((syntactic-op? nxt)
+      ((and (syntactic-op? nxt) (not (eq? nxt '...)))
        ;; allow (=) etc.
        (let ((tok (take-token s)))
          (if (not (eqv? (require-token s) #\) ))
